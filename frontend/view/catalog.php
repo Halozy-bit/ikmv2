@@ -1,9 +1,9 @@
 <?php
 
-    include ('./header.html');
+    require_once(getcwd() . '/header.html');
 
-    include ('catalog/hero.html');
+    require_once(getcwd() . "/catalog/hero.php");
 
-    include ('./footer.html');
+    require_once(getcwd() . './footer.html');
 
 ?>  
