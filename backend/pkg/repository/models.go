@@ -6,9 +6,9 @@ import (
 
 type DocCatalog struct {
 	Id          primitive.ObjectID `bson:"_id"`
-	Name        string             `bson:"name"`
-	Category    []string           `bson:"category"`
-	Description string             `bson:"description"`
+	Name        string             `bson:"nama"`
+	Category    string             `bson:"kategori"`
+	Description string             `bson:"deskripsi"`
 	Owner       string             `bson:"owner"`
-	Foto        []string           `bson:"foto"`
+	Foto        string             `bson:"foto"`
 }

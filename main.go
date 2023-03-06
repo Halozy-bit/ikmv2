@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 
 	"github.com/ikmv2/backend/api"
@@ -12,10 +11,9 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	cfg := config.MongoConfig{}
-	db, err := repository.ConnectDatabase(ctx, cfg)
+
+	db, err := repository.ConnectDatabase(cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -33,7 +33,6 @@ func DecodeCatalogCursor(ctx context.Context, curr *mongo.Cursor) ([]DocCatalog,
 		if err := curr.Decode(&tmp); err != nil {
 			return result, err
 		}
-
 		result = append(result, tmp)
 	}
 
