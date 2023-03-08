@@ -23,7 +23,6 @@ const mongoNative = "mongodb"
 const mongoAtlasFreeTier = "mongodb+srv"
 
 func buildConfig(mongoCfg config.MongoConfig) (mongoBuilder, error) {
-	log.Println("building configuration")
 	builder := mongoBuilder{}
 
 	driver := strings.ToLower(mongoCfg.MongoDriver)
@@ -31,13 +30,13 @@ func buildConfig(mongoCfg config.MongoConfig) (mongoBuilder, error) {
 	switch driver {
 	case mongoAtlasFreeTier:
 		builder.url = "/?retryWrites=true&w=majority"
-		// builder.opt = options.ServerAPI(options.ServerAPIVersion1)
 	case mongoNative:
 		builder.url = ":27017"
 	default:
-		return builder, fmt.Errorf("")
+		return builder, fmt.Errorf("driver not provide")
 	}
 
+	builder.opt = options.ServerAPI(options.ServerAPIVersion1)
 	url := fmt.Sprintf("%s://%s:%s@%s", driver, mongoCfg.User, mongoCfg.Password, mongoCfg.Address)
 	builder.url = url + builder.url
 	builder.dbName = mongoCfg.DbName

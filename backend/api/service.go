@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/ikmv2/backend/pkg/cache"
 	"github.com/ikmv2/backend/pkg/repository"
@@ -22,7 +23,8 @@ type Service struct {
 
 // pagination with index in cache
 func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]repository.DocCatalog, error) {
-	if lastId == "" {
+	if len(lastId) < 10 {
+		log.Print("get last id from cache")
 		lastId = cache.Get(cache.TopCatalog).(string)
 	}
 
@@ -32,7 +34,8 @@ func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]r
 	}
 
 	if page <= 1 {
-		return s.repo.CataloGtId(ctx, id, int64(MaxProductPerPage))
+		log.Print("page 1")
+		return s.repo.CatalogGteId(ctx, id, int64(MaxProductPerPage))
 	}
 
 	totalProduct, err := s.repo.CountCatalog(ctx)
@@ -41,6 +44,7 @@ func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]r
 	}
 
 	TotalProductNextPage := CountTtlProductNxtPage(page, int(totalProduct))
+	log.Print("next page: ", TotalProductNextPage)
 	if TotalProductNextPage < 1 {
 		return nil, mongo.ErrNoDocuments
 	}
@@ -61,7 +65,7 @@ func (s *Service) CatalogListByCategory(ctx context.Context, page int, category 
 		return nil, fmt.Errorf("invalid id")
 	}
 
-	return s.repo.CataloGtId(ctx, id, int64(MaxProductPerPage))
+	return s.repo.CatalogGtId(ctx, id, int64(MaxProductPerPage))
 }
 
 // fetch catalog like fetching circle catalog
@@ -70,20 +74,21 @@ func (s *Service) CatalogListByCategory(ctx context.Context, page int, category 
 // if the pagination is at the bottom of the item, while there are still items that have not been returned
 // then a batch 2 query will be executed to the top item in the database database
 func (s *Service) fetchCatalog(ctx context.Context, id primitive.ObjectID, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
-	if id.Hex() == cache.Get(cache.BottomCatalog).(string) {
-		ctlgLs, err = s.repo.CataloGtId(ctx, id, int64(contentLimit))
-		if err != nil {
-			return nil, err
-		}
-
-		// insufficient number of items that should be returned
-		contentLimit = contentLimit - len(ctlgLs)
-		if contentLimit < 1 {
-			return ctlgLs, nil
-		}
+	ctlgLs, err = s.repo.CatalogGtId(ctx, id, int64(contentLimit))
+	log.Print("batch 1 get:", len(ctlgLs))
+	if err != nil {
+		return nil, err
 	}
 
-	ctlgLsFirst, err := s.repo.CatalogFirstPage(ctx, int64(contentLimit))
+	// insufficient number of items that should be returned
+	contentLimit = contentLimit - len(ctlgLs)
+	log.Print("deviation: ", contentLimit)
+	if contentLimit <= 0 {
+		return ctlgLs, nil
+	}
+
+	ctlgLsFirst, err := s.repo.CatalogFirstLine(ctx, int64(contentLimit))
+	log.Print("batch 2 get:", len(ctlgLsFirst))
 	if err != nil {
 		return nil, err
 	}

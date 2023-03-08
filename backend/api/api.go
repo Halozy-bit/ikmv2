@@ -20,18 +20,21 @@ type Api struct {
 }
 
 func NewEndpoint(repo repository.Repository) Api {
-	first, err := repo.FirstItem()
-	if err != nil {
-		log.Fatalln("Error get first item")
+	if cache.Get(cache.TopCatalog).(string) == "" || cache.Get(cache.BottomCatalog).(string) == "" {
+		first, err := repo.FirstItem()
+		if err != nil {
+			log.Fatalln("Error get first item")
+		}
+
+		last, err := repo.LastItem()
+		if err != nil {
+			log.Fatalln("Error get last item")
+		}
+
+		cache.Store(cache.TopCatalog, first.Id.Hex())
+		cache.Store(cache.BottomCatalog, last.Id.Hex())
 	}
 
-	last, err := repo.LastItem()
-	if err != nil {
-		log.Fatalln("Error get last item")
-	}
-
-	cache.Store(cache.TopCatalog, first.Id.Hex())
-	cache.Store(cache.BottomCatalog, last.Id.Hex())
 	return Api{
 		server:  echo.New(),
 		service: Service{repo: repo},
@@ -39,11 +42,13 @@ func NewEndpoint(repo repository.Repository) Api {
 }
 
 func (a Api) ExposeRoute() {
-	a.server.GET("ping", func(c echo.Context) error {
-		return c.JSON(200, JsonMap{"reponse": "pong"})
-	})
+	a.server.GET("/ping", a.Pong)
 
 	a.server.GET("/catalog/:page", a.GetCatalog)
+}
+
+func (a Api) Pong(c echo.Context) error {
+	return c.JSON(http.StatusOK, JsonMap{"reponse": "pong"})
 }
 
 // TODO
@@ -54,12 +59,14 @@ func (a Api) GetCatalog(c echo.Context) error {
 
 	req.Page, err = strconv.Atoi(c.Param("page"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, JsonMap{"message": "page not exist"})
+		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
 	}
 
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, JsonMap{"message": err.Error()})
 	}
+
+	log.Println(req)
 
 	var catalog []repository.DocCatalog
 	var cErr error
@@ -76,6 +83,7 @@ func (a Api) GetCatalog(c echo.Context) error {
 			req.LastID,
 		)
 	}
+
 	switch cErr {
 	case nil:
 		err = c.JSON(http.StatusOK, JsonMap{"catalog": catalog})
@@ -88,6 +96,10 @@ func (a Api) GetCatalog(c echo.Context) error {
 	return err
 }
 
-func (a Api) StartServer() {
-	a.server.Start(":8082")
+func (a Api) Server() *echo.Echo {
+	return a.server
+}
+
+func (a Api) StartServer(address string) {
+	a.server.Start(address)
 }
