@@ -33,11 +33,8 @@ func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]r
 		panic("invalid top id")
 	}
 
-	if page <= 1 {
-		log.Print("page 1")
-		return s.repo.CatalogGteId(ctx, id, int64(MaxProductPerPage))
-	}
-
+	// NOTE
+	// potential bug amount if maualy add data to database
 	totalProduct, err := s.repo.CountCatalog(ctx)
 	if err != nil {
 		return nil, err
@@ -49,7 +46,7 @@ func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]r
 		return nil, mongo.ErrNoDocuments
 	}
 
-	return s.fetchCatalog(ctx, id, TotalProductNextPage)
+	return s.fetchCatalog(ctx, id, page, TotalProductNextPage)
 }
 
 // TODO
@@ -73,11 +70,20 @@ func (s *Service) CatalogListByCategory(ctx context.Context, page int, category 
 // @id item starts from, @contentLimit limit catalog you want to fetch
 // if the pagination is at the bottom of the item, while there are still items that have not been returned
 // then a batch 2 query will be executed to the top item in the database database
-func (s *Service) fetchCatalog(ctx context.Context, id primitive.ObjectID, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
-	ctlgLs, err = s.repo.CatalogGtId(ctx, id, int64(contentLimit))
+func (s *Service) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
+	switch page {
+	case 1:
+		ctlgLs, err = s.repo.CatalogGteId(ctx, id, int64(contentLimit))
+	default:
+		ctlgLs, err = s.repo.CatalogGtId(ctx, id, int64(contentLimit))
+	}
+
 	log.Print("batch 1 get:", len(ctlgLs))
+	log.Println(err)
 	if err != nil {
-		return nil, err
+		if err != mongo.ErrEmptySlice {
+			return nil, err
+		}
 	}
 
 	// insufficient number of items that should be returned
