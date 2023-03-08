@@ -22,5 +22,5 @@ func main() {
 
 	node := api.NewEndpoint(repo)
 	node.ExposeRoute()
-	node.StartServer()
+	node.StartServer(":8081")
 }
