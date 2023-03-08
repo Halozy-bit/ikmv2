@@ -11,6 +11,7 @@ import (
 
 	"github.com/ikmv2/backend/api"
 	"github.com/ikmv2/backend/config"
+	"github.com/ikmv2/backend/pkg/cache"
 	"github.com/ikmv2/backend/pkg/repository"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -92,11 +93,12 @@ func seedData() {
 }
 
 func TestGetPagination(t *testing.T) {
-	defer func() {
+	defer func(t *testing.T) {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in f", r)
+			t.Fail()
 		}
-	}()
+	}(t)
 	maxPage := len(DummyData) / api.MaxProductPerPage
 	if maxPage > 0 {
 		maxPage += 1
@@ -147,5 +149,75 @@ func TestGetPagination(t *testing.T) {
 
 // TODO
 // Pagination per category
-// rolling id pagination
 // Find error case
+
+func TestGetPaginationNextID(t *testing.T) {
+	defer func(t *testing.T) {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+			t.Fail()
+		}
+	}(t)
+
+	top := 27
+	cache.Store(cache.TopCatalog, DummyData[top].Hex())
+	cache.Store(cache.BottomCatalog, DummyData[initData-1].Hex())
+
+	maxPage := len(DummyData) / api.MaxProductPerPage
+	if maxPage > 0 {
+		maxPage += 1
+	}
+
+	log.Println("load server")
+	node := api.NewEndpoint(repo)
+	server := node.Server()
+	var last_id = ""
+	var trait = int(top)
+
+	for page := 1; page <= maxPage; page++ {
+		path := fmt.Sprintf("/catalog/%d", page)
+		body, err := EncodeID(last_id)
+		if !assert.NoError(t, err) {
+			break
+		}
+
+		tp := TestSetParam{Name: "page", Value: fmt.Sprint(page)}
+		c, rec := CreateRequestContext(server, path, body, tp)
+
+		t.Log("request address: ", c.Path())
+		err = node.GetCatalog(c)
+		if !assert.NoError(t, err) {
+			t.Log(err)
+			break
+		}
+
+		if !assert.Equal(t, http.StatusOK, rec.Code) {
+			t.Log(rec.Body.String())
+			break
+		}
+
+		var js = struct {
+			Catalog []repository.DocCatalog `json:"catalog"`
+		}{}
+
+		err = json.Unmarshal(rec.Body.Bytes(), &js)
+
+		if !assert.NoError(t, err) {
+			break
+		}
+
+		ctlg := js.Catalog
+		t.Log("get response length: ", len(ctlg))
+
+		if len(ctlg) > api.MaxProductPerPage {
+			panic("too many return")
+		}
+
+		trait, last_id = verifyOutputNextID(
+			outputNextID{
+				t: t, page: page, maxPage: maxPage, trait: trait, initData: initData,
+				last_id: last_id, ctlg: ctlg, DummyData: DummyData,
+			},
+		)
+	}
+}

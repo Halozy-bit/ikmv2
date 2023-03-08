@@ -64,12 +64,46 @@ func verifyOutput(t *testing.T, page int, maxPage int, ctlg []repository.DocCata
 	assert.Equal(t, ctlg[0].Id, DummyData[trait])
 
 	trait += lastIdx
-	if page != maxPage {
-		last_id = ctlg[lastIdx].Id.Hex()
-	}
+	last_id = ctlg[lastIdx].Id.Hex()
 
 	log.Print("trait: ", trait)
 	assert.Equal(t, ctlg[lastIdx].Id, DummyData[trait])
 	return last_id
 
+}
+
+type outputNextID struct {
+	t         *testing.T
+	page      int
+	maxPage   int
+	trait     int
+	initData  int
+	last_id   string
+	ctlg      []repository.DocCatalog
+	DummyData []primitive.ObjectID
+}
+
+// return trait and last_id
+func verifyOutputNextID(oid outputNextID) (int, string) {
+	lastIdx := len(oid.ctlg) - 1
+	log.Print("first index: ", oid.ctlg[0].Id, ", last index: ", oid.ctlg[lastIdx].Id)
+	log.Print("expect first: ", oid.DummyData[oid.trait])
+	assert.Equal(oid.t, oid.ctlg[0].Id, oid.DummyData[oid.trait])
+
+	oid.trait += lastIdx
+	if oid.page == 1 {
+		oid.trait -= 1
+	}
+
+	if oid.trait >= oid.initData {
+		oid.trait = oid.trait - (oid.initData - 1)
+	}
+
+	oid.t.Log("expect last: ", oid.DummyData[oid.trait])
+	oid.last_id = oid.ctlg[lastIdx].Id.Hex()
+
+	log.Print("trait: ", oid.DummyData[oid.trait])
+	assert.Equal(oid.t, oid.ctlg[lastIdx].Id, oid.DummyData[oid.trait])
+	oid.trait++
+	return oid.trait, oid.last_id
 }
