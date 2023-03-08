@@ -5,7 +5,7 @@ import (
 )
 
 type DocCatalog struct {
-	Id          primitive.ObjectID `bson:"_id"`
+	Id          primitive.ObjectID `bson:"_id" insert:"0"`
 	Name        string             `bson:"nama"`
 	Category    string             `bson:"kategori"`
 	Description string             `bson:"deskripsi"`
