@@ -4,9 +4,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/ikmv2/backend/pkg/cache"
+	asynctask "github.com/ikmv2/backend/pkg/async_task"
 	"github.com/ikmv2/backend/pkg/repository"
+	"github.com/ikmv2/backend/pkg/sidejob"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/labstack/echo/v4"
@@ -20,25 +22,32 @@ type Api struct {
 }
 
 func NewEndpoint(repo repository.Repository) Api {
-	if cache.Get(cache.TopCatalog).(string) == "" || cache.Get(cache.BottomCatalog).(string) == "" {
-		first, err := repo.FirstItem()
-		if err != nil {
-			log.Fatalln("Error get first item")
-		}
-
-		last, err := repo.LastItem()
-		if err != nil {
-			log.Fatalln("Error get last item")
-		}
-
-		cache.Store(cache.TopCatalog, first.Id.Hex())
-		cache.Store(cache.BottomCatalog, last.Id.Hex())
-	}
-
 	return Api{
 		server:  echo.New(),
-		service: Service{repo: repo},
+		service: &ServiceCirclePage{repo: repo},
 	}
+}
+
+func (a Api) StartSideJob(db *mongo.Database) error {
+	err := asynctask.AddTask(&sidejob.RefreshCatalogPage{
+		Db: db,
+		TaskIdentifier: asynctask.TaskIdentifier{
+			Name:     "refresh catalog page",
+			Interval: time.Minute * 3,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("preparing side job")
+	err = asynctask.Start(time.Second * 5)
+	if err != nil {
+		return err
+	}
+	time.Sleep(time.Second * 5)
+	return nil
 }
 
 func (a Api) ExposeRoute() {
@@ -66,8 +75,6 @@ func (a Api) GetCatalog(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, JsonMap{"message": err.Error()})
 	}
 
-	log.Println(req)
-
 	var catalog []repository.DocCatalog
 	var cErr error
 	if len(req.Category) > 3 {
@@ -80,7 +87,6 @@ func (a Api) GetCatalog(c echo.Context) error {
 		catalog, cErr = a.service.CatalogList(
 			c.Request().Context(),
 			req.Page,
-			req.LastID,
 		)
 	}
 

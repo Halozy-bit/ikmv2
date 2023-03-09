@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -47,6 +48,27 @@ func DecodeCatalogCursor(ctx context.Context, curr *mongo.Cursor) ([]DocCatalog,
 	if len(result) < 1 {
 		return result, mongo.ErrEmptySlice
 	}
+	return result, nil
+}
+
+func DecodeId(ctx context.Context, curr *mongo.Cursor) ([]primitive.ObjectID, error) {
+	type IDDecoder struct {
+		Id primitive.ObjectID `bson:"_id"`
+	}
+
+	var result []primitive.ObjectID
+	for curr.Next(ctx) {
+		var tmp IDDecoder
+		if err := curr.Decode(&tmp); err != nil {
+			return result, err
+		}
+		result = append(result, tmp.Id)
+	}
+
+	if len(result) < 1 {
+		return result, mongo.ErrEmptySlice
+	}
+
 	return result, nil
 }
 

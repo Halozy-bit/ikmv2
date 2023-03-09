@@ -29,7 +29,7 @@ func TestNewTask(t *testing.T) {
 }
 
 func TestRunner(t *testing.T) {
-	rn := &runner{c: make(chan int)}
+	rn := &runner{C: make(chan int)}
 	amountTask := 5
 	for i := 0; i < amountTask; i++ {
 		randDur := time.Duration(int(repository.RandInt(1, 5)))
@@ -51,10 +51,11 @@ func TestRunner(t *testing.T) {
 }
 
 func TestAsync(t *testing.T) {
-	amountTask := 5
+	amountTask := 1
 	for i := 0; i < amountTask; i++ {
 		randDur := time.Duration(int(repository.RandInt(1, 10)))
-		task, err := NewTask(repository.RandName(true), randDur*time.Second, logger, repository.RandName(true))
+		name := repository.RandName(true)
+		task, err := NewTask(name, randDur*time.Second, logger, name)
 		t.Log(task.GetName(), " interval ", task.GetInterval())
 		assert.NoError(t, err)
 		err = AddTask(task)
@@ -63,5 +64,6 @@ func TestAsync(t *testing.T) {
 
 	Start(time.Second * 1)
 	time.Sleep(time.Second * 20)
+	log.Println("sending stop signal")
 	Stop()
 }

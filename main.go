@@ -11,7 +11,13 @@ import (
 )
 
 func main() {
-	cfg := config.MongoConfig{}
+	cfg := config.MongoConfig{
+		MongoDriver: "mongodb",
+		User:        "user",
+		Password:    "secret",
+		Address:     "127.0.0.1",
+		DbName:      "ikm-project",
+	}
 
 	db, err := repository.ConnectDatabase(cfg)
 	if err != nil {
@@ -21,6 +27,7 @@ func main() {
 	repo := repository.NewRepository(db)
 
 	node := api.NewEndpoint(repo)
+	node.StartSideJob(db)
 	node.ExposeRoute()
 	node.StartServer(":8081")
 }

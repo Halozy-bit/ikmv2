@@ -8,10 +8,14 @@ import (
 type runner struct {
 	task    []Task
 	nextRun []int64
-	c       chan int
+	C       chan int
 }
 
 func (r *runner) InsertTask(newTask Task) error {
+	if len(r.task) >= 16 {
+		return fmt.Errorf("task full")
+	}
+
 	if newTask.GetInterval() == emptyInterval {
 		return ErrTaskDurationEmpty
 	}
@@ -26,7 +30,7 @@ func (r *runner) InsertTask(newTask Task) error {
 }
 
 func (r *runner) Receive() <-chan int {
-	return r.c
+	return r.C
 }
 
 func (r *runner) incrementInterval(i int) {
@@ -36,20 +40,22 @@ func (r *runner) incrementInterval(i int) {
 }
 
 func (r runner) Run(taskNumber int) error {
-	if taskNumber > len(r.task)-1 {
+	tNum := int(taskNumber)
+	if tNum > len(r.task)-1 {
 		return fmt.Errorf("no task")
 	}
 
-	r.task[taskNumber].Run()
-	r.incrementInterval(taskNumber)
+	r.task[tNum].Run()
+	r.incrementInterval(tNum)
 	return nil
 }
 
 func (r *runner) Check() {
 	now := time.Now().Unix()
 	for i := 0; i < len(r.nextRun); i++ {
-		if r.nextRun[i] <= now {
-			r.c <- i
+		next := r.nextRun[i]
+		if next <= now {
+			r.C <- i
 		}
 	}
 }

@@ -6,35 +6,37 @@ import (
 	"log"
 
 	"github.com/ikmv2/backend/pkg/cache"
+	"github.com/ikmv2/backend/pkg/helper"
 	"github.com/ikmv2/backend/pkg/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const MaxProductPerPage int = 16
-
 var (
 	ErrInvalidID = fmt.Errorf("invalid id")
 )
 
-type Service struct {
+type Service interface {
+	CatalogList(context.Context, int) ([]repository.DocCatalog, error)
+	CatalogListByCategory(context.Context, int, string, string) ([]repository.DocCatalog, error)
+}
+
+type ServiceCirclePage struct {
 	repo repository.Repository
 }
 
 // pagination with index in cache
-func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]repository.DocCatalog, error) {
-	if len(lastId) < 10 {
-		log.Print("get last id from cache")
-		lastId = cache.Get(cache.TopCatalog).(string)
-	}
-
-	id, idErr := primitive.ObjectIDFromHex(lastId)
-	if idErr != nil {
-		panic("invalid top id")
+// return helper.MaxPerPage array leng or less
+// id reference per page from cache.Pagination
+func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]repository.DocCatalog, error) {
+	id := cache.Pagination.Page(page)
+	if id == primitive.NilObjectID {
+		return nil, fmt.Errorf("page not found")
 	}
 
 	// NOTE
 	// potential bug amount if maualy add data to database
+	// add to cache pagination
 	totalProduct, err := s.repo.CountCatalog(ctx)
 	if err != nil {
 		return nil, err
@@ -51,9 +53,9 @@ func (s *Service) CatalogList(ctx context.Context, page int, lastId string) ([]r
 
 // TODO
 // rotation in specific category
-func (s *Service) CatalogListByCategory(ctx context.Context, page int, category string, lastId string) ([]repository.DocCatalog, error) {
+func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int, category string, lastId string) ([]repository.DocCatalog, error) {
 	if page == 1 {
-		ctlg, err := s.repo.CatalogFirstPageWithCategory(ctx, int64(MaxProductPerPage), category)
+		ctlg, err := s.repo.CatalogFirstPageWithCategory(ctx, int64(helper.MaxProductPerPage), category)
 		return ctlg, err
 	}
 
@@ -62,7 +64,7 @@ func (s *Service) CatalogListByCategory(ctx context.Context, page int, category 
 		return nil, fmt.Errorf("invalid id")
 	}
 
-	return s.repo.CatalogGtId(ctx, id, int64(MaxProductPerPage))
+	return s.repo.CatalogGtId(ctx, id, int64(helper.MaxProductPerPage))
 }
 
 // fetch catalog like fetching circle catalog
@@ -70,13 +72,8 @@ func (s *Service) CatalogListByCategory(ctx context.Context, page int, category 
 // @id item starts from, @contentLimit limit catalog you want to fetch
 // if the pagination is at the bottom of the item, while there are still items that have not been returned
 // then a batch 2 query will be executed to the top item in the database database
-func (s *Service) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
-	switch page {
-	case 1:
-		ctlgLs, err = s.repo.CatalogGteId(ctx, id, int64(contentLimit))
-	default:
-		ctlgLs, err = s.repo.CatalogGtId(ctx, id, int64(contentLimit))
-	}
+func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
+	ctlgLs, err = s.repo.CatalogGteId(ctx, id, int64(contentLimit))
 
 	log.Print("batch 1 get:", len(ctlgLs))
 	log.Println(err)

@@ -8,30 +8,28 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/ikmv2/backend/api"
 	"github.com/ikmv2/backend/config"
-	"github.com/ikmv2/backend/pkg/cache"
+	asynctask "github.com/ikmv2/backend/pkg/async_task"
+	"github.com/ikmv2/backend/pkg/helper"
 	"github.com/ikmv2/backend/pkg/repository"
+	"github.com/ikmv2/backend/pkg/sidejob"
+	testhelper "github.com/ikmv2/backend/pkg/test_helper"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var repo repository.Repository
-var conn *mongo.Client
-var category [3]string
-var sumPerCategory [3]int
-var DummyData []primitive.ObjectID
+var dummyCtlg testhelper.CatalogDummy
+var db *mongo.Database
+var job sidejob.RefreshCatalogPage
 var initData int = 40
+var jobRunCount int
 
 func TestMain(m *testing.M) {
-
-	for i := range category {
-		category[i] = repository.RandName(true)
-	}
-
 	cfg := config.MongoConfig{
 		MongoDriver: "mongodb",
 		User:        "user",
@@ -40,56 +38,36 @@ func TestMain(m *testing.M) {
 		DbName:      "ikm-project",
 	}
 
-	log.Println("connecting to database")
-	db, err := repository.ConnectDatabase(cfg)
+	var err error
+	db, err = repository.ConnectDatabase(cfg)
 	if err != nil {
 		log.Fatal()
 	}
 	log.Println("database connected")
 
+	job = sidejob.RefreshCatalogPage{
+		Db: db,
+		TaskIdentifier: asynctask.TaskIdentifier{
+			Name:     "refresh catalog page",
+			Interval: time.Minute * 3,
+		},
+	}
+	log.Print("sidejob initialized")
+
 	log.Println("fill database arg dan set dummy data")
-	conn = db.Client()
 	repo = repository.NewRepository(db)
-	seedData()
+	dummyCtlg = testhelper.SeedCatalog(initData, 3, repo)
 
 	log.Println("Running tests!")
 
 	exitVal := m.Run()
 
 	db.Collection("catalog").DeleteMany(context.TODO(), bson.D{})
-	conn.Disconnect(context.TODO())
+	db.Client().Disconnect(context.TODO())
 	log.Println("wiping data")
 
 	log.Println("exiting tests!")
 	os.Exit(exitVal)
-}
-
-func seedData() {
-	insertParam := make([]repository.DocCatalog, initData)
-	for i := range insertParam {
-		Category := repository.RandInt(0, 3)
-		sumPerCategory[Category]++
-		insertParam[i] = repository.DocCatalog{
-			Name:        repository.RandName(),
-			Category:    category[Category],
-			Description: repository.RandString(15),
-			Owner:       primitive.NewObjectID().Hex(),
-			Foto:        primitive.NewObjectID().Hex() + ".jpg",
-		}
-	}
-
-	for i := range insertParam {
-		insrd, err := repo.Insert(context.TODO(), insertParam[i])
-		if err != nil {
-			continue
-		}
-
-		id := insrd.(primitive.ObjectID)
-
-		primID := id
-		log.Print(primID)
-		DummyData = append(DummyData, primID)
-	}
 }
 
 func TestGetPagination(t *testing.T) {
@@ -99,27 +77,22 @@ func TestGetPagination(t *testing.T) {
 			t.Fail()
 		}
 	}(t)
-	maxPage := len(DummyData) / api.MaxProductPerPage
-	if maxPage > 0 {
-		maxPage += 1
-	}
-
 	log.Println("load server")
 	node := api.NewEndpoint(repo)
+	job.Run()
+	jobRunCount++
+
+	maxPage := helper.MaxPage(helper.MaxProductPerPage, len(dummyCtlg.Dummy))
 	server := node.Server()
-	var last_id = ""
+
 	for i := 1; i <= maxPage; i++ {
 		path := fmt.Sprintf("/catalog/%d", i)
-		body, err := EncodeID(last_id)
-		if !assert.NoError(t, err) {
-			break
-		}
 
-		tp := TestSetParam{Name: "page", Value: fmt.Sprint(i)}
-		c, rec := CreateRequestContext(server, path, body, tp)
+		tp := testhelper.TestSetParam{Name: "page", Value: fmt.Sprint(i)}
+		c, rec := testhelper.CreateRequestContext(server, path, nil, tp)
 
 		t.Log("request address: ", c.Path())
-		err = node.GetCatalog(c)
+		err := node.GetCatalog(c)
 		if !assert.NoError(t, err) {
 			t.Log(err)
 			break
@@ -143,7 +116,7 @@ func TestGetPagination(t *testing.T) {
 		ctlg := js.Catalog
 		t.Log("get response length: ", len(ctlg))
 
-		last_id = verifyOutput(t, i, maxPage, ctlg, DummyData)
+		testhelper.VerifyOutput(t, i, maxPage, ctlg, dummyCtlg.Dummy)
 	}
 }
 
@@ -159,33 +132,27 @@ func TestGetPaginationNextID(t *testing.T) {
 		}
 	}(t)
 
-	top := 27
-	cache.Store(cache.TopCatalog, DummyData[top].Hex())
-	cache.Store(cache.BottomCatalog, DummyData[initData-1].Hex())
+	job.Run()
+	jobRunCount++
+	job.Run()
+	jobRunCount++
 
-	maxPage := len(DummyData) / api.MaxProductPerPage
-	if maxPage > 0 {
-		maxPage += 1
-	}
+	maxPage := helper.MaxPage(helper.MaxProductPerPage, len(dummyCtlg.Dummy))
 
 	log.Println("load server")
 	node := api.NewEndpoint(repo)
 	server := node.Server()
-	var last_id = ""
-	var trait = int(top)
+	var expectFirst int = 6
+	var expectLast int = expectFirst
 
 	for page := 1; page <= maxPage; page++ {
 		path := fmt.Sprintf("/catalog/%d", page)
-		body, err := EncodeID(last_id)
-		if !assert.NoError(t, err) {
-			break
-		}
 
-		tp := TestSetParam{Name: "page", Value: fmt.Sprint(page)}
-		c, rec := CreateRequestContext(server, path, body, tp)
+		tp := testhelper.TestSetParam{Name: "page", Value: fmt.Sprint(page)}
+		c, rec := testhelper.CreateRequestContext(server, path, nil, tp)
 
 		t.Log("request address: ", c.Path())
-		err = node.GetCatalog(c)
+		err := node.GetCatalog(c)
 		if !assert.NoError(t, err) {
 			t.Log(err)
 			break
@@ -206,17 +173,16 @@ func TestGetPaginationNextID(t *testing.T) {
 			break
 		}
 
-		ctlg := js.Catalog
-		t.Log("get response length: ", len(ctlg))
+		t.Log("get response length: ", len(js.Catalog))
 
-		if len(ctlg) > api.MaxProductPerPage {
+		if len(js.Catalog) > helper.MaxProductPerPage {
 			panic("too many return")
 		}
 
-		trait, last_id = verifyOutputNextID(
-			outputNextID{
-				t: t, page: page, maxPage: maxPage, trait: trait, initData: initData,
-				last_id: last_id, ctlg: ctlg, DummyData: DummyData,
+		expectFirst, expectLast = testhelper.VerifyOutputNextID(
+			testhelper.OutputNextID{
+				T: t, Page: page, ExpectedFirst: expectFirst, ExpectedLast: expectLast,
+				InitData: initData, Ctlg: js.Catalog, DummyData: dummyCtlg.Dummy,
 			},
 		)
 	}

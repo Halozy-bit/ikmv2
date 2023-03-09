@@ -99,7 +99,7 @@ func (r *Repository) CatalogFindOne(ctx context.Context, filter bson.D) (DocCata
 func (r *Repository) FirstItem() (DocCatalog, error) {
 	var doc DocCatalog
 	findOptions := options.FindOne()
-	// Sort by id field descending
+	// Sort by id field ascending
 	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
 	err := r.Catalog().FindOne(context.TODO(), bson.D{}).Decode(&doc)
 
@@ -119,5 +119,10 @@ func (r *Repository) LastItem() (DocCatalog, error) {
 
 func (r *Repository) CountCatalog(ctx context.Context) (int64, error) {
 	filter := bson.D{}
+	return r.Catalog().CountDocuments(ctx, filter)
+}
+
+func (r *Repository) CountCatalogCategory(ctx context.Context, category string) (int64, error) {
+	filter := bson.D{bson.E{Key: "kategori", Value: category}}
 	return r.Catalog().CountDocuments(ctx, filter)
 }
