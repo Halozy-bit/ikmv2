@@ -22,6 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// NOTE
+// the program is running properly
+// but the logic test is still not correct
+
 var repo repository.Repository
 var dummyCtlg testhelper.CatalogDummy
 var db *mongo.Database
