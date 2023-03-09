@@ -17,6 +17,7 @@
             <div class="collapse navbar-collapse d-lg-flex flex-row justify-content-end my-2" id="navbarNav">
                 <a class="nav-link active mx-lg-2 mt-2 " aria-current="page" href="#">Beranda</a>
                 <a class="nav-link mx-lg-2 mt-2" aria-current="page" href="view/catalog.php">Produk Katalog</a>
+                <a class="nav-link mx-lg-2 mt-2" aria-current="page" href="view/profile.php">Profil UMKM</a>
                 <a class="nav-link mx-lg-2 mt-2" aria-current="page" href="#">Tentang Kami</a>
             </div>
         </div>
