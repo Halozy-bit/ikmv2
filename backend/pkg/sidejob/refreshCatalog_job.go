@@ -36,18 +36,7 @@ func (rc *RefreshCatalogPage) Run() {
 
 	idTable := make([]primitive.ObjectID, maxPage)
 	last_id := cache.Pagination.Page(1)
-	if last_id != primitive.NilObjectID {
-		// skip 6 document
-		opt.SetLimit(5)
-		filter := bson.D{{Key: "_id", Value: bson.D{{Key: "$gt", Value: last_id}}}}
-		fl, err := findFirstAndLast(coll, filter, opt)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		last_id = fl[1]
-	}
+	last_id = SetFirstID(last_id, opt, coll)
 
 	opt.SetLimit(int64(helper.MaxProductPerPage))
 	for i := 0; i < maxPage; i++ {
@@ -70,6 +59,22 @@ func (rc *RefreshCatalogPage) Run() {
 		last_id = ids[1]
 	}
 	cache.Pagination.StorePage(idTable)
+}
+
+func SetFirstID(last_id primitive.ObjectID, opt *options.FindOptions, coll *mongo.Collection) primitive.ObjectID {
+	if last_id != primitive.NilObjectID {
+		// skip 6 document
+		opt.SetLimit(5)
+		filter := bson.D{{Key: "_id", Value: bson.D{{Key: "$gt", Value: last_id}}}}
+		fl, err := findFirstAndLast(coll, filter, opt)
+		if err != nil {
+			log.Println(err)
+			return primitive.NilObjectID
+		}
+
+		return fl[1]
+	}
+	return primitive.NilObjectID
 }
 
 func findFirstAndLast(coll *mongo.Collection, filter bson.D, opt *options.FindOptions) ([2]primitive.ObjectID, error) {
