@@ -4,6 +4,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const CategoryField = "kategori"
+
 type DocCatalog struct {
 	Id          primitive.ObjectID `bson:"_id" insert:"0"`
 	Name        string             `bson:"nama"`

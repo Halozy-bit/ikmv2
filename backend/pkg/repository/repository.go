@@ -42,7 +42,7 @@ func (r *Repository) CatalogFirstLine(ctx context.Context, contentLimit int64) (
 }
 
 func (r *Repository) CatalogFirstPageWithCategory(ctx context.Context, contentLimit int64, category string) ([]DocCatalog, error) {
-	filter := bson.D{{Key: "kategori", Value: category}}
+	filter := bson.D{{Key: CategoryField, Value: category}}
 
 	curr, err := r.catalogQueryFirstLine(ctx, contentLimit, filter)
 	if err != nil {
@@ -123,6 +123,6 @@ func (r *Repository) CountCatalog(ctx context.Context) (int64, error) {
 }
 
 func (r *Repository) CountCatalogCategory(ctx context.Context, category string) (int64, error) {
-	filter := bson.D{bson.E{Key: "kategori", Value: category}}
+	filter := bson.D{bson.E{Key: CategoryField, Value: category}}
 	return r.Catalog().CountDocuments(ctx, filter)
 }
