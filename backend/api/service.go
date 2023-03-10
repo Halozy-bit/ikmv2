@@ -42,7 +42,7 @@ func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]reposi
 		return nil, err
 	}
 
-	TotalProductNextPage := CountTtlProductNxtPage(page, int(totalProduct))
+	TotalProductNextPage := helper.CountTtlProductNxtPage(page, int(totalProduct))
 	log.Print("next page: ", TotalProductNextPage)
 	if TotalProductNextPage < 1 {
 		return nil, mongo.ErrNoDocuments
