@@ -11,14 +11,17 @@ import (
 	"github.com/ikmv2/backend/config"
 	asynctask "github.com/ikmv2/backend/pkg/async_task"
 	"github.com/ikmv2/backend/pkg/cache"
+	"github.com/ikmv2/backend/pkg/helper"
 	"github.com/ikmv2/backend/pkg/repository"
 	testhelper "github.com/ikmv2/backend/pkg/test_helper"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var db *mongo.Database
+var ctldDummy testhelper.CatalogDummy
 
 func TestMain(m *testing.M) {
 	defer func() {
@@ -43,7 +46,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("database connected")
 
-	testhelper.SeedCatalog(40, 3, repository.NewRepository(db))
+	ctldDummy = testhelper.SeedCatalog(40, repository.NewRepository(db))
 	log.Println("Running tests!")
 
 	exitVal := m.Run()
@@ -72,18 +75,17 @@ func TestTask1(t *testing.T) {
 		},
 	}
 
-	rcp.Run()
-	run1 := cache.Pagination.Page(1)
-	t.Log(run1)
-
-	rcp.Run()
-	run2 := cache.Pagination.Page(1)
-	t.Log(run2)
-
-	assert.NotEqual(t, run1, run2)
+	var before primitive.ObjectID
+	for i := 0; i < 5; i++ {
+		rcp.Run()
+		run1 := cache.Pagination.CategoryPage(helper.CategoryAvail[0], 1)
+		log.Println(run1)
+		before = run1
+		assert.NotEqual(t, before, run1)
+	}
 }
 
-func TestAsync(t *testing.T) {
+func TestAsyncTask1(t *testing.T) {
 	defer func(t *testing.T) {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in f", r)
@@ -109,4 +111,33 @@ func TestAsync(t *testing.T) {
 
 	log.Println("sending stop signal")
 	asynctask.Stop()
+}
+
+func TestTask2(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+			t.Fail()
+		}
+	}()
+
+	rcp := RefreshCatalogCategoryPage{
+		Db: db,
+		TaskIdentifier: asynctask.TaskIdentifier{
+			Name:     "refresh catalog page per category",
+			Interval: time.Second,
+		},
+	}
+
+	log.Println(ctldDummy.CounCategory[0])
+	log.Println(ctldDummy.CounCategory[1])
+
+	var before primitive.ObjectID
+	for i := 0; i < 5; i++ {
+		rcp.Run()
+		run1 := cache.Pagination.CategoryPage(helper.CategoryAvail[0], 1)
+		log.Println(run1)
+		before = run1
+		assert.NotEqual(t, before, run1)
+	}
 }
