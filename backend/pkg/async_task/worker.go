@@ -31,6 +31,7 @@ free:
 		r.Check()
 		select {
 		case <-stopChecker:
+			w.sigStopWorker()
 			break free
 		default:
 			<-ticker.C
@@ -40,6 +41,7 @@ free:
 
 func (w *worker) do(r *runner, stopWorker <-chan struct{}) {
 	log.Print("running goroutine worker")
+	defer close(w.stopWorker)
 free:
 	for {
 		select {
@@ -69,7 +71,14 @@ func (w *worker) Start(refreshDur time.Duration) error {
 }
 
 func (w *worker) Stop() {
-	w.stopWorker <- struct{}{}
-	w.stopChecker <- struct{}{}
+	w.sigStopChecker()
 	w.isRunning = false
+}
+
+func (w *worker) sigStopChecker() {
+	w.stopChecker <- struct{}{}
+}
+
+func (w *worker) sigStopWorker() {
+	w.stopChecker <- struct{}{}
 }
