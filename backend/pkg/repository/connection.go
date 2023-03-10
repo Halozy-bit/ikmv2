@@ -50,8 +50,7 @@ func ConnectDatabase(mongoCfg config.MongoConfig) (*mongo.Database, error) {
 		return nil, err
 	}
 
-	log.Println(bl.url)
-	log.Println("setup environment database")
+	log.Println("[database] setup environment")
 	var clientOptions = options.Client()
 	clientOptions.ApplyURI(bl.url)
 	clientOptions.SetServerAPIOptions(bl.opt)
@@ -59,12 +58,12 @@ func ConnectDatabase(mongoCfg config.MongoConfig) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	log.Println("connecting to database")
+	log.Println("[database] connecting to")
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("database connected")
+	log.Println("[database] connected")
 
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return nil, err

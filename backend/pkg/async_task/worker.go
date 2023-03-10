@@ -24,7 +24,7 @@ func (w worker) AddTask(newTask Task) error {
 func (w *worker) checker(refreshDur time.Duration, r *runner, stopChecker <-chan struct{}) {
 	defer close(w.r.C)
 	defer close(w.stopChecker)
-	log.Print("running goroutine checker")
+	log.Print("[async checker] running goroutine checker")
 	ticker := time.NewTicker(refreshDur)
 free:
 	for {
@@ -37,10 +37,11 @@ free:
 			<-ticker.C
 		}
 	}
+	log.Println("[async checker] stopped")
 }
 
 func (w *worker) do(r *runner, stopWorker <-chan struct{}) {
-	log.Print("running goroutine worker")
+	log.Print("[async worker] running goroutine worker")
 	defer close(w.stopWorker)
 free:
 	for {
@@ -48,12 +49,12 @@ free:
 		case <-stopWorker:
 			break free
 		case call := <-r.C:
-			log.Print("Running: ", w.r.task[call].GetName())
+			log.Print("[task] Running: ", w.r.task[call].GetName())
 			r.Run(call)
-			log.Print("exiting: ", w.r.task[call].GetName())
+			log.Print("[task] exiting: ", w.r.task[call].GetName())
 		}
 	}
-	log.Println("worker stopped")
+	log.Println("[async worker] stopped")
 }
 
 func (w *worker) Start(refreshDur time.Duration) error {

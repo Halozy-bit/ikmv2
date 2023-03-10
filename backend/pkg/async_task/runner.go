@@ -27,7 +27,7 @@ func (r *runner) InsertTask(newTask Task) error {
 
 	r.task = append(r.task, newTask)
 	r.nextRun = append(r.nextRun, time.Now().Unix())
-	log.Print("task ", newTask.GetName(), " registered")
+	log.Print("[task] ", newTask.GetName(), " registered")
 	return nil
 }
 

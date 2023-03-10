@@ -7,3 +7,6 @@ type MongoConfig struct {
 	Address     string
 	DbName      string
 }
+
+type Configuration struct {
+}

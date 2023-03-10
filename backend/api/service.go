@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/ikmv2/backend/pkg/cache"
 	"github.com/ikmv2/backend/pkg/helper"
@@ -43,7 +42,6 @@ func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]reposi
 	}
 
 	TotalProductNextPage := helper.CountTtlProductNxtPage(page, int(totalProduct))
-	log.Print("next page: ", TotalProductNextPage)
 	if TotalProductNextPage < 1 {
 		return nil, mongo.ErrNoDocuments
 	}
@@ -75,8 +73,6 @@ func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int,
 func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int) (ctlgLs []repository.DocCatalog, err error) {
 	ctlgLs, err = s.repo.CatalogGteId(ctx, id, int64(contentLimit))
 
-	log.Print("batch 1 get:", len(ctlgLs))
-	log.Println(err)
 	if err != nil {
 		if err != mongo.ErrEmptySlice {
 			return nil, err
@@ -85,13 +81,11 @@ func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.Objec
 
 	// insufficient number of items that should be returned
 	contentLimit = contentLimit - len(ctlgLs)
-	log.Print("deviation: ", contentLimit)
 	if contentLimit <= 0 {
 		return ctlgLs, nil
 	}
 
 	ctlgLsFirst, err := s.repo.CatalogFirstLine(ctx, int64(contentLimit))
-	log.Print("batch 2 get:", len(ctlgLsFirst))
 	if err != nil {
 		return nil, err
 	}
