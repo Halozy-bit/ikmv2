@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,6 +13,8 @@ func init() {
 	Pagination = new(pagination)
 	Pagination.mux = new(sync.RWMutex)
 }
+
+var ErrStoreSameID = fmt.Errorf("cache store same id")
 
 // Immutable
 type pagination struct {
@@ -37,25 +40,38 @@ func (p *pagination) Page(idx int) primitive.ObjectID {
 	return id
 }
 
-func (p *pagination) SetCategory(category string, ids []primitive.ObjectID) {
+// page starts from page 1
+func (p *pagination) CategoryPage(category string, idx int) primitive.ObjectID {
+	p.mux.RLock()
+	defer p.mux.RUnlock()
+	if idx > len(p.category[category]) {
+		return primitive.NilObjectID
+	}
+	id := p.category[category][idx-1]
+	return id
+}
+
+func (p *pagination) StoreCategory(category string, ids []primitive.ObjectID) error {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 	if len(p.category[category]) > 0 {
 		if p.category[category][0] == ids[0] {
-			return
+			return ErrStoreSameID
 		}
 	}
 
 	p.category[category] = ids
+	return nil
 }
 
-func (p *pagination) StorePage(ids []primitive.ObjectID) {
+func (p *pagination) StorePage(ids []primitive.ObjectID) error {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 	if len(p.page) > 0 {
 		if p.page[0] == ids[0] {
-			return
+			return ErrStoreSameID
 		}
 	}
 	p.page = ids
+	return nil
 }
