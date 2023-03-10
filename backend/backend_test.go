@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("fill database arg dan set dummy data")
 	repo = repository.NewRepository(db)
-	dummyCtlg = testhelper.SeedCatalog(initData, 3, repo)
+	dummyCtlg = testhelper.SeedCatalog(initData, repo)
 
 	log.Println("Running tests!")
 

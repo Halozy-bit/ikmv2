@@ -22,18 +22,15 @@ type CatalogDummy struct {
 	Dummy        []primitive.ObjectID
 }
 
-func SeedCatalog(total int, amountCategory int, repo repository.Repository) CatalogDummy {
+func SeedCatalog(total int, repo repository.Repository) CatalogDummy {
 	cd := CatalogDummy{
-		Category:     make([]string, amountCategory),
-		CounCategory: make([]int, amountCategory),
+		Category:     helper.CategoryAvail,
+		CounCategory: make([]int, len(helper.CategoryAvail)),
 	}
 
-	for i := range cd.Category {
-		cd.Category[i] = repository.RandName(true)
-	}
-
+	cTotal := int32(len(helper.CategoryAvail))
 	for i := 0; i < total; i++ {
-		Category := repository.RandInt(0, 3)
+		Category := repository.RandInt(0, cTotal)
 		param := repository.DocCatalog{
 			Name:        repository.RandName(),
 			Category:    cd.Category[Category],
