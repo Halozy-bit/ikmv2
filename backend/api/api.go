@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,23 +28,31 @@ func NewEndpoint(repo repository.Repository) Api {
 }
 
 func (a Api) StartSideJob(db *mongo.Database) error {
-	err := asynctask.AddTask(&sidejob.RefreshCatalogPage{
+	if err := asynctask.AddTask(&sidejob.RefreshCatalogPage{
 		Db: db,
 		TaskIdentifier: asynctask.TaskIdentifier{
 			Name:     "refresh catalog page",
-			Interval: time.Minute * 3,
+			Interval: time.Hour * 10,
 		},
-	})
+	}); err != nil {
+		return err
+	}
 
+	if err := asynctask.AddTask(&sidejob.RefreshCatalogCategoryPage{
+		Db: db,
+		TaskIdentifier: asynctask.TaskIdentifier{
+			Name:     "refresh catalog per category",
+			Interval: time.Hour * 15,
+		},
+	}); err != nil {
+		return err
+	}
+
+	err := asynctask.Start(time.Second * 5)
 	if err != nil {
 		return err
 	}
 
-	log.Println("preparing side job")
-	err = asynctask.Start(time.Second * 5)
-	if err != nil {
-		return err
-	}
 	time.Sleep(time.Second * 5)
 	return nil
 }
