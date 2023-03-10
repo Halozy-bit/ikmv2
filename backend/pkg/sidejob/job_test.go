@@ -84,20 +84,29 @@ func TestTask1(t *testing.T) {
 }
 
 func TestAsync(t *testing.T) {
+	defer func(t *testing.T) {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+			t.Fail()
+		}
+	}(t)
 	err := asynctask.AddTask(&RefreshCatalogPage{
 		Db: db,
 		TaskIdentifier: asynctask.TaskIdentifier{
 			Name:     "refresh catalog page",
-			Interval: time.Minute * 2,
+			Interval: time.Second * 2,
 		},
 	})
+
 	assert.NoError(t, err)
+
 	log.Println("preparing side job")
-	err = asynctask.Start(time.Second * 5)
+	err = asynctask.Start(time.Second * 2)
 	assert.NoError(t, err)
-	time.Sleep(time.Minute * 3)
+
+	time.Sleep(time.Second * 20)
 	log.Print(cache.Pagination.Page(1))
+
 	log.Println("sending stop signal")
-	time.Sleep(time.Minute * 3)
 	asynctask.Stop()
 }
