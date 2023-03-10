@@ -30,43 +30,54 @@ func (rc *RefreshCatalogPage) Run() {
 	maxPage := helper.MaxPage(helper.MaxProductPerPage, int(ctlgTotal))
 
 	opt := options.Find()
-	opt.SetProjection(bson.D{
-		{Key: "_id", Value: 1},
-	})
+	opt.SetProjection(bson.D{{Key: "_id", Value: 1}})
 
 	idTable := make([]primitive.ObjectID, maxPage)
-	last_id := cache.Pagination.Page(1)
-	last_id = SetFirstID(last_id, opt, coll)
+	// WARN
+	// Minor bug
+	last_id := initLastID(cache.Pagination.Page(1), coll, opt)
 
-	opt.SetLimit(int64(helper.MaxProductPerPage))
 	for i := 0; i < maxPage; i++ {
+		// start with the first page
+		page := i + 1
 		time.Sleep(time.Millisecond * 10)
 
+		// total item must in this page
+		totalNext := helper.CountTtlProductNxtPage(page, int(ctlgTotal))
+
 		filter := bson.D{}
+		opt.SetLimit(int64(totalNext))
 		if last_id != primitive.NilObjectID {
 			id := bson.D{{Key: "$gt", Value: last_id}}
 			filter = bson.D{{Key: "_id", Value: id}}
 		}
 
-		ids, err := findFirstAndLast(coll, filter, opt)
+		ids, err := findFirstAndLast(coll, filter, totalNext, opt)
 		if err != nil {
-			log.Println(err)
+			log.Print(rc.TaskIdentifier.Name, " Err first and last, ", err)
 			return
 		}
 
 		idTable[i] = ids[0]
-		log.Println(ids[0])
 		last_id = ids[1]
 	}
-	cache.Pagination.StorePage(idTable)
+	// log.Println(idTable)
+	err = cache.Pagination.StorePage(idTable)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
-func SetFirstID(last_id primitive.ObjectID, opt *options.FindOptions, coll *mongo.Collection) primitive.ObjectID {
+func initLastID(last_id primitive.ObjectID, coll *mongo.Collection, opt *options.FindOptions) primitive.ObjectID {
 	if last_id != primitive.NilObjectID {
 		// skip 6 document
-		opt.SetLimit(5)
+		skip := 6
+		opt.SetLimit(int64(skip))
 		filter := bson.D{{Key: "_id", Value: bson.D{{Key: "$gt", Value: last_id}}}}
-		fl, err := findFirstAndLast(coll, filter, opt)
+		// Note
+		// this function skip more than variable skip
+		// because findFirstAndLast is skip again
+		fl, err := findFirstAndLast(coll, filter, skip, opt)
 		if err != nil {
 			log.Println(err)
 			return primitive.NilObjectID
@@ -77,18 +88,60 @@ func SetFirstID(last_id primitive.ObjectID, opt *options.FindOptions, coll *mong
 	return primitive.NilObjectID
 }
 
-func findFirstAndLast(coll *mongo.Collection, filter bson.D, opt *options.FindOptions) ([2]primitive.ObjectID, error) {
+// using query $gt/greater than specific id
+// directly skips the id that was thrown
+//
+// if in the database last line but item leng != content limit
+// then query to the first line in database
+//
+// return id from first and last result
+func findFirstAndLast(coll *mongo.Collection, filter bson.D, contentLimit int, opt *options.FindOptions) ([2]primitive.ObjectID, error) {
 	var ids [2]primitive.ObjectID
 	curr, err := coll.Find(context.TODO(), filter, opt)
 	if err != nil {
 		return ids, err
 	}
 
-	ids, err = decodeFirstAndLastID(context.TODO(), curr)
+	var decodeLeng int
+	ids, decodeLeng, err = decodeFirstAndLastID(context.TODO(), curr)
+	if err != nil {
+		if contentLimit < 1 {
+			return ids, err
+		}
+	}
+
+	contentLimit -= decodeLeng
+	log.Print("deviation: ", contentLimit)
+	if contentLimit < 1 {
+		log.Println(ids)
+		return ids, nil
+	}
+
+	opt.SetLimit(int64(contentLimit))
+	curr, err = coll.Find(context.TODO(), bson.D{}, opt)
+	if err != nil {
+		return ids, err
+	}
+
+	var ids2 [2]primitive.ObjectID
+	ids2, _, err = decodeFirstAndLastID(context.TODO(), curr)
+	if err != nil {
+		return ids, err
+	}
+
+	if ids[0] == primitive.NilObjectID {
+		ids[0] = ids2[1]
+	}
+
+	ids[1] = ids2[1]
+
+	log.Println(ids)
 	return ids, err
 }
 
-func decodeFirstAndLastID(ctx context.Context, curr *mongo.Cursor) ([2]primitive.ObjectID, error) {
+// [2]primitive.ObjectID first and las id
+// int leng
+func decodeFirstAndLastID(ctx context.Context, curr *mongo.Cursor) ([2]primitive.ObjectID, int, error) {
 	// var once *sync.Once
 	type IDDecoder struct {
 		Id primitive.ObjectID `bson:"_id"`
@@ -103,20 +156,19 @@ func decodeFirstAndLastID(ctx context.Context, curr *mongo.Cursor) ([2]primitive
 		if !curr.TryNext(ctx) {
 			err = curr.Decode(&tmp)
 			if err != nil {
-				return result, err
+				return result, i, err
 			}
 			result[1] = tmp.Id
 			break
 		} else if i == 0 {
 			err = curr.Decode(&tmp)
 			if err != nil {
-				return result, err
+				return result, i, err
 			}
 			result[0] = tmp.Id
 		}
 		i++
-
 	}
 
-	return result, nil
+	return result, i, nil
 }
