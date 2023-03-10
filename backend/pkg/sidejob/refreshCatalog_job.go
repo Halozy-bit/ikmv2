@@ -8,12 +8,14 @@ import (
 	asynctask "github.com/ikmv2/backend/pkg/async_task"
 	"github.com/ikmv2/backend/pkg/cache"
 	"github.com/ikmv2/backend/pkg/helper"
+	"github.com/ikmv2/backend/pkg/repository"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Task 1
 type RefreshCatalogPage struct {
 	asynctask.TaskIdentifier
 	Db *mongo.Database
@@ -35,6 +37,7 @@ func (rc *RefreshCatalogPage) Run() {
 	idTable := make([]primitive.ObjectID, maxPage)
 	// WARN
 	// Minor bug
+	// last_id is the reference id to perform the next query
 	last_id := initLastID(cache.Pagination.Page(1), coll, opt)
 
 	for i := 0; i < maxPage; i++ {
@@ -46,7 +49,7 @@ func (rc *RefreshCatalogPage) Run() {
 		totalNext := helper.CountTtlProductNxtPage(page, int(ctlgTotal))
 
 		filter := bson.D{}
-		opt.SetLimit(int64(totalNext))
+
 		if last_id != primitive.NilObjectID {
 			id := bson.D{{Key: "$gt", Value: last_id}}
 			filter = bson.D{{Key: "_id", Value: id}}
@@ -68,6 +71,8 @@ func (rc *RefreshCatalogPage) Run() {
 	}
 }
 
+// Deprecated
+// try implement queryGetLastID, make it compatible with categories
 func initLastID(last_id primitive.ObjectID, coll *mongo.Collection, opt *options.FindOptions) primitive.ObjectID {
 	if last_id != primitive.NilObjectID {
 		// skip 6 document
@@ -88,6 +93,34 @@ func initLastID(last_id primitive.ObjectID, coll *mongo.Collection, opt *options
 	return primitive.NilObjectID
 }
 
+func queryGetLastID(last_id primitive.ObjectID, coll *mongo.Collection, additionalFilter bson.E, opt *options.FindOptions) primitive.ObjectID {
+	if last_id == primitive.NilObjectID {
+		return primitive.NilObjectID
+	}
+
+	// skip 6 document
+	skip := 6
+	opt.SetLimit(int64(skip))
+	filter := bson.D{{Key: "_id", Value: bson.D{{Key: "$gt", Value: last_id}}}}
+	if additionalFilter.Key != "" {
+		filter = append(filter, additionalFilter)
+	}
+	// Note
+	// this function skip more than variable skip
+	// because findFirstAndLast is skip again
+	fl, err := findFirstAndLast(coll, filter, skip, opt)
+	if err != nil {
+		log.Println(err)
+		return primitive.NilObjectID
+	}
+
+	return fl[1]
+}
+
+func initLastIDCategory(last_id primitive.ObjectID, coll *mongo.Collection, category string, opt *options.FindOptions) primitive.ObjectID {
+	return queryGetLastID(last_id, coll, bson.E{Key: repository.CategoryField, Value: category}, opt)
+}
+
 // using query $gt/greater than specific id
 // directly skips the id that was thrown
 //
@@ -97,6 +130,7 @@ func initLastID(last_id primitive.ObjectID, coll *mongo.Collection, opt *options
 // return id from first and last result
 func findFirstAndLast(coll *mongo.Collection, filter bson.D, contentLimit int, opt *options.FindOptions) ([2]primitive.ObjectID, error) {
 	var ids [2]primitive.ObjectID
+	opt.SetLimit(int64(contentLimit))
 	curr, err := coll.Find(context.TODO(), filter, opt)
 	if err != nil {
 		return ids, err
