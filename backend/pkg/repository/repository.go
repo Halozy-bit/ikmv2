@@ -26,61 +26,57 @@ func NewRepository(db *mongo.Database) Repository {
 //		{Key: "field2", Value: 1},
 //	})
 
-func (r *Repository) catalogQueryFirstLine(ctx context.Context, contentLimit int64, filter bson.D) (*mongo.Cursor, error) {
-	opt := &options.FindOptions{}
-	opt.SetLimit(contentLimit)
-
-	return r.Catalog().Find(ctx, filter, opt)
-}
 func (r *Repository) CatalogFirstLine(ctx context.Context, contentLimit int64) ([]DocCatalog, error) {
-	curr, err := r.catalogQueryFirstLine(ctx, contentLimit, bson.D{})
-	if err != nil {
-		return nil, err
-	}
-
-	return DecodeCatalogCursor(ctx, curr)
+	opt := options.Find().SetLimit(contentLimit)
+	return r.catalogFinder(ctx, bson.D{}, opt)
 }
 
 func (r *Repository) CatalogFirstPageWithCategory(ctx context.Context, contentLimit int64, category string) ([]DocCatalog, error) {
+	opt := options.Find().SetLimit(contentLimit)
 	filter := bson.D{{Key: CategoryField, Value: category}}
+	return r.catalogFinder(ctx, filter, opt)
+}
 
-	curr, err := r.catalogQueryFirstLine(ctx, contentLimit, filter)
+func (r *Repository) catalogFinder(ctx context.Context, filter bson.D, opt *options.FindOptions) ([]DocCatalog, error) {
+	curr, err := r.Catalog().Find(ctx, filter, opt)
 	if err != nil {
 		return nil, err
 	}
-
 	return DecodeCatalogCursor(ctx, curr)
-}
-
-// param @id primitive.ObjectID or set Query Selectors
-func (r *Repository) catalogFromId(ctx context.Context, id interface{}, contentLimit int64) (*mongo.Cursor, error) {
-	opt := &options.FindOptions{}
-	opt.SetLimit(contentLimit)
-	filter := bson.D{{Key: "_id", Value: id}}
-
-	return r.Catalog().Find(ctx, filter, opt)
 }
 
 // search the catalog with the underlying query selector
 // ex Query Selectors bson.D{{Key: "$gt", Value: id}}
-func (r *Repository) catalogIdSelector(ctx context.Context, id bson.D, contentLimit int64) ([]DocCatalog, error) {
-	curr, err := r.catalogFromId(ctx, id, contentLimit)
-	if err != nil {
-		return nil, err
+func (r *Repository) CatalogIdSelector(ctx context.Context, contentLimit int64, id bson.D, addFilter ...bson.E) ([]DocCatalog, error) {
+	opt := &options.FindOptions{}
+	opt.SetLimit(contentLimit)
+
+	filter := bson.D{{Key: "_id", Value: id}}
+	if len(addFilter) > 0 {
+		filter = append(filter, addFilter...)
 	}
-	return DecodeCatalogCursor(ctx, curr)
+
+	return r.catalogFinder(ctx, filter, opt)
 }
 
 // get catalog from greater than @id
-func (r *Repository) CatalogGtId(ctx context.Context, id primitive.ObjectID, contentLimit int64) ([]DocCatalog, error) {
+func (r *Repository) CatalogGtId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]DocCatalog, error) {
 	gtID := bson.D{{Key: "$gt", Value: id}}
-	return r.catalogIdSelector(ctx, gtID, contentLimit)
+	if len(category) > 0 {
+		return r.CatalogIdSelector(ctx, contentLimit, gtID, bson.E{Key: CategoryField, Value: category})
+	}
+	return r.CatalogIdSelector(ctx, contentLimit, gtID)
 }
 
 // get catalog from greater or equal @id
-func (r *Repository) CatalogGteId(ctx context.Context, id primitive.ObjectID, contentLimit int64) ([]DocCatalog, error) {
+func (r *Repository) CatalogGteId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]DocCatalog, error) {
 	gtID := bson.D{{Key: "$gte", Value: id}}
-	return r.catalogIdSelector(ctx, gtID, contentLimit)
+	return r.CatalogIdSelector(ctx, contentLimit, gtID)
+}
+
+func (r *Repository) CatalogGteIdByCategory(ctx context.Context, id primitive.ObjectID, contentLimit int64, category string) ([]DocCatalog, error) {
+	gtID := bson.D{{Key: "$gte", Value: id}}
+	return r.CatalogIdSelector(ctx, contentLimit, gtID, bson.E{Key: CategoryField, Value: category})
 }
 
 func (r *Repository) Insert(ctx context.Context, in DocCatalog) (interface{}, error) {

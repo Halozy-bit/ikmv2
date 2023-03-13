@@ -27,6 +27,8 @@ func NewEndpoint(repo repository.Repository) Api {
 	}
 }
 
+// TODO
+// Check data updated
 func (a Api) StartSideJob(db *mongo.Database) error {
 	if err := asynctask.AddTask(&sidejob.RefreshCatalogPage{
 		Db: db,
@@ -61,6 +63,9 @@ func (a Api) ExposeRoute() {
 	a.server.GET("/ping", a.Pong)
 
 	a.server.GET("/catalog/:page", a.GetCatalog)
+	// TODO
+	// annoying -> /catalog/makanan kering/1
+	a.server.GET("/catalog/:category/:page", a.GetCatalogByCategory)
 }
 
 func (a Api) Pong(c echo.Context) error {
@@ -70,7 +75,7 @@ func (a Api) Pong(c echo.Context) error {
 // TODO
 // Return multiple error from binding
 func (a Api) GetCatalog(c echo.Context) error {
-	req := new(CatalogGetProduct)
+	req := CatalogGetProduct{}
 	var err error
 
 	req.Page, err = strconv.Atoi(c.Param("page"))
@@ -78,24 +83,42 @@ func (a Api) GetCatalog(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
 	}
 
-	if err := c.Bind(req); err != nil {
-		return c.JSON(http.StatusBadRequest, JsonMap{"message": err.Error()})
+	var catalog []repository.DocCatalog
+	var cErr error
+	catalog, cErr = a.service.CatalogList(
+		c.Request().Context(),
+		req.Page,
+	)
+
+	switch cErr {
+	case nil:
+		err = c.JSON(http.StatusOK, JsonMap{"catalog": catalog})
+	case mongo.ErrNoDocuments:
+		err = c.JSON(http.StatusNoContent, JsonMap{"message": "no content"})
+	default:
+		err = c.JSON(http.StatusInternalServerError, JsonMap{"message": err.Error()})
+	}
+
+	return err
+}
+
+func (a Api) GetCatalogByCategory(c echo.Context) error {
+	req := CatalogGetProduct{}
+	var err error
+
+	req.Category = c.Param("category")
+
+	req.Page, err = strconv.Atoi(c.Param("page"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
 	}
 
 	var catalog []repository.DocCatalog
 	var cErr error
-	if len(req.Category) > 3 {
-		catalog, cErr = a.service.CatalogListByCategory(
-			c.Request().Context(),
-			req.Page, req.Category,
-			req.LastID,
-		)
-	} else {
-		catalog, cErr = a.service.CatalogList(
-			c.Request().Context(),
-			req.Page,
-		)
-	}
+	catalog, cErr = a.service.CatalogListByCategory(
+		c.Request().Context(),
+		req.Page, req.Category,
+	)
 
 	switch cErr {
 	case nil:
