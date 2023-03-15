@@ -24,37 +24,23 @@
                         <button type="button" class="btn">Aksesoris</button>
                     </div>
                 </div>
-                <div class="d-lg-flex justify-content-lg-between justify-content-sm-center">
-                    <div class="d-flex flex-column p-3">
-                    <div class=""><img src="https://lh4.googleusercontent.com/21JKU08_lRAcreQiSuJx1kI1g1I6_Fnsq0X7FrZLxhxplWaK1VYOVqcLVD7yUnVfGuw=w2400" class="img-fluid" style="border-radius: 5%;" height="180"alt=""></div>
-                    <div style="background-color:#FEFBE8" class="col-7 mt-2 badge rounded-pill text-dark">Makanan Kering</div>
-                    <div class="fw-bold fs-4">Keripik Kentang</div>
-                    <div class=""><a href="index.php" style="text-decoration: none; color:black;">Dela Muda</a></span></button></div>
-                    </div>
-                    <div class="d-flex flex-column p-3">
-                    <div class=""><img src="https://lh3.googleusercontent.com/1faQVzygAJ-b5LVuGdt8zO0KPT7QMpMvNPJKGAQ8zlYOYZnhyyQRcJ141lw7dDb4wG0=w2400" class="img-fluid" style="border-radius: 5%;" height="180"alt=""></div>
-                    <div style="background-color:#FEFBE8" class="col-7 mt-2 badge rounded-pill text-dark">Makanan Kering</div>
-                    <div class="fw-bold fs-4">Keripik Kentang</div>
-                    <div class=""><a href="index.php" style="text-decoration: none; color:black;">Dela Muda</a></span></button></div>
-                    </div>    
-                    <div class="d-flex flex-column p-3">
-                    <div class=""><img src="https://lh4.googleusercontent.com/21JKU08_lRAcreQiSuJx1kI1g1I6_Fnsq0X7FrZLxhxplWaK1VYOVqcLVD7yUnVfGuw=w2400" class="img-fluid" style="border-radius: 5%;" height="180"alt=""></div>
-                    <div style="background-color:#FEFBE8" class="col-7 mt-2 badge rounded-pill text-dark">Makanan Kering</div>
-                    <div class="fw-bold fs-4">Keripik Kentang</div>
-                    <div class=""><a href="index.php" style="text-decoration: none; color:black;">Dela Muda</a></span></button></div>
-                    </div>
-                    <div class="d-flex flex-column p-3">
-                    <div class=""><img src="https://lh3.googleusercontent.com/1faQVzygAJ-b5LVuGdt8zO0KPT7QMpMvNPJKGAQ8zlYOYZnhyyQRcJ141lw7dDb4wG0=w2400" class="img-fluid" style="border-radius: 5%;" height="180"alt=""></div>
-                    <div style="background-color:#FEFBE8" class="col-7 mt-2 badge rounded-pill text-dark">Makanan Kering</div>
-                    <div class="fw-bold fs-4">Keripik Kentang</div>
-                    <div class=""><a href="index.php" style="text-decoration: none; color:black;">Dela Muda</a></span></button></div>
-                    </div>
-                    <div class="d-flex flex-column p-3">
-                    <div class=""><img src="https://lh4.googleusercontent.com/21JKU08_lRAcreQiSuJx1kI1g1I6_Fnsq0X7FrZLxhxplWaK1VYOVqcLVD7yUnVfGuw=w2400" class="img-fluid" style="border-radius: 5%;" height="180"alt=""></div>
-                    <div style="background-color:#FEFBE8" class="col-7 mt-2 badge rounded-pill text-dark">Makanan Kering</div>
-                    <div class="fw-bold fs-4">Keripik Kentang</div>
-                    <div class=""><a href="index.php" style="text-decoration: none; color:black;">Dela Muda</a></span></button></div>
-                    </div>
+                <div class="d-lg-flex justify-content-lg-between flex-wrap justify-content-sm-center">
+                <?php
+                    $str = file_get_contents('http://192.168.1.67:8081/catalog/1');
+                    $json = json_decode($str, true);
+                    // var_dump($json);
+                    foreach ($json['catalog'] as $key => $value) {
+                        echo "
+                        <div class='d-flex flex-column col-lg-3 ps-3'>
+                            <div class='pt-3 pe-3'><img src='https://lh4.googleusercontent.com/21JKU08_lRAcreQiSuJx1kI1g1I6_Fnsq0X7FrZLxhxplWaK1VYOVqcLVD7yUnVfGuw=w2400' class='img-fluid' style='border-radius: 5%;' height='180'></div>
+                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'>Makanan Kering</div>
+                            <div class='fw-bold fs-4'>{$value['Name']}</div>
+                            <div><a href='index.php' style='text-decoration: none; color:black;'>{$value['Owner']}</a></span></button></div>
+                        </div>
+                        ";
+                        // print_r($value);
+                    }
+                ?>
                 </div>
             </div>
         </div>

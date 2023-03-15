@@ -4,6 +4,6 @@
 
     require_once(getcwd() . "/catalog/hero.php");
 
-    require_once(getcwd() . './footer.html');
+    require_once(getcwd() . '/footer.html');
 
 ?>  
