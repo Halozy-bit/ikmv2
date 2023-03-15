@@ -63,8 +63,6 @@ func (a Api) ExposeRoute() {
 	a.server.GET("/ping", a.Pong)
 
 	a.server.GET("/catalog/:page", a.GetCatalog)
-	// TODO
-	// annoying -> /catalog/makanan kering/1
 	a.server.GET("/catalog/:category/:page", a.GetCatalogByCategory)
 }
 
