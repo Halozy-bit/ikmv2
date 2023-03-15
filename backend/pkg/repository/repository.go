@@ -85,13 +85,6 @@ func (r *Repository) Insert(ctx context.Context, in DocCatalog) (interface{}, er
 	return res.InsertedID, err
 }
 
-func (r *Repository) CatalogFindOne(ctx context.Context, filter bson.D) (DocCatalog, error) {
-	var doc DocCatalog
-	err := r.Catalog().FindOne(context.TODO(), filter).Decode(&doc)
-
-	return doc, err
-}
-
 func (r *Repository) FirstItem() (DocCatalog, error) {
 	var doc DocCatalog
 	findOptions := options.FindOne()
@@ -116,6 +109,19 @@ func (r *Repository) LastItem() (DocCatalog, error) {
 func (r *Repository) CountCatalog(ctx context.Context) (int64, error) {
 	filter := bson.D{}
 	return r.Catalog().CountDocuments(ctx, filter)
+}
+
+func (r *Repository) FindProduct(ctx context.Context, id primitive.ObjectID) (Product, error) {
+	filter := bson.D{{Key: "_id", Value: id}}
+	opt := options.FindOne()
+	opt.SetProjection(bson.D{
+		{Key: "_id", Value: 1}, {Key: "nama", Value: 1}, {Key: "kategori", Value: 1},
+		{Key: "deskripsi", Value: 1}, {Key: "owner", Value: 1}, {Key: "foto", Value: 1},
+	})
+
+	var p Product
+	err := r.Catalog().FindOne(ctx, filter, opt).Decode(&p)
+	return p, err
 }
 
 func (r *Repository) CountCatalogCategory(ctx context.Context, category string) (int64, error) {

@@ -8,6 +8,7 @@ import (
 	asynctask "github.com/ikmv2/backend/pkg/async_task"
 	"github.com/ikmv2/backend/pkg/repository"
 	"github.com/ikmv2/backend/pkg/sidejob"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/labstack/echo/v4"
@@ -64,6 +65,7 @@ func (a Api) ExposeRoute() {
 
 	a.server.GET("/catalog/:page", a.GetCatalog)
 	a.server.GET("/catalog/:category/:page", a.GetCatalogByCategory)
+	a.server.GET("/product/:id", a.GetProduct)
 }
 
 func (a Api) Pong(c echo.Context) error {
@@ -81,9 +83,7 @@ func (a Api) GetCatalog(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
 	}
 
-	var catalog []repository.DocCatalog
-	var cErr error
-	catalog, cErr = a.service.CatalogList(
+	catalog, cErr := a.service.CatalogList(
 		c.Request().Context(),
 		req.Page,
 	)
@@ -111,9 +111,7 @@ func (a Api) GetCatalogByCategory(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
 	}
 
-	var catalog []repository.DocCatalog
-	var cErr error
-	catalog, cErr = a.service.CatalogListByCategory(
+	catalog, cErr := a.service.CatalogListByCategory(
 		c.Request().Context(),
 		req.Page, req.Category,
 	)
@@ -121,6 +119,27 @@ func (a Api) GetCatalogByCategory(c echo.Context) error {
 	switch cErr {
 	case nil:
 		err = c.JSON(http.StatusOK, JsonMap{"catalog": catalog})
+	case mongo.ErrNoDocuments:
+		err = c.JSON(http.StatusNoContent, JsonMap{"message": "no content"})
+	default:
+		err = c.JSON(http.StatusInternalServerError, JsonMap{"message": err.Error()})
+	}
+
+	return err
+}
+
+func (a Api) GetProduct(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
+	}
+
+	p, err := a.service.Product(c.Request().Context(), id)
+
+	switch err {
+	case nil:
+		err = c.JSON(http.StatusOK, JsonMap{"product": p})
 	case mongo.ErrNoDocuments:
 		err = c.JSON(http.StatusNoContent, JsonMap{"message": "no content"})
 	default:

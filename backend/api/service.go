@@ -18,6 +18,7 @@ var (
 type Service interface {
 	CatalogList(context.Context, int) ([]repository.DocCatalog, error)
 	CatalogListByCategory(context.Context, int, string) ([]repository.DocCatalog, error)
+	Product(context.Context, primitive.ObjectID) (repository.Product, error)
 }
 
 type ServiceCirclePage struct {
@@ -71,6 +72,10 @@ func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int,
 	}
 
 	return s.fetchCatalog(ctx, id, page, TotalProductNextPage, category)
+}
+
+func (s *ServiceCirclePage) Product(ctx context.Context, id primitive.ObjectID) (repository.Product, error) {
+	return s.repo.FindProduct(ctx, id)
 }
 
 // fetch catalog like fetching circle catalog
