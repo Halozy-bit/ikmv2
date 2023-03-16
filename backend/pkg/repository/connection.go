@@ -25,7 +25,7 @@ const mongoAtlasFreeTier = "mongodb+srv"
 func buildConfig(mongoCfg config.MongoConfig) (mongoBuilder, error) {
 	builder := mongoBuilder{}
 
-	driver := strings.ToLower(mongoCfg.MongoDriver)
+	driver := strings.ToLower(mongoCfg.Driver)
 
 	switch driver {
 	case mongoAtlasFreeTier:

@@ -35,11 +35,11 @@ func TestMain(m *testing.M) {
 
 func TestConnection(t *testing.T) {
 	cfg := config.MongoConfig{
-		MongoDriver: mongoNative,
-		User:        "user",
-		Password:    "secret",
-		Address:     "127.0.0.1",
-		DbName:      "ikm-project",
+		Driver:   mongoNative,
+		User:     "user",
+		Password: "secret",
+		Address:  "127.0.0.1",
+		DbName:   "ikm-project",
 	}
 
 	db, err := ConnectDatabase(cfg)

@@ -12,12 +12,14 @@ import (
 
 func main() {
 	cfg := config.MongoConfig{
-		MongoDriver: "mongodb",
-		User:        "user",
-		Password:    "secret",
-		Address:     "127.0.0.1",
-		DbName:      "ikm-project",
+		Driver:   "mongodb",
+		User:     "user",
+		Password: "secret",
+		Address:  "127.0.0.1",
+		DbName:   "ikm-project-beta_test",
 	}
+
+	config.AutoEnv(&cfg)
 
 	db, err := repository.ConnectDatabase(cfg)
 	if err != nil {
