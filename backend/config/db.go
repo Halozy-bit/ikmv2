@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"reflect"
 )
@@ -15,18 +16,14 @@ type MongoConfig struct {
 
 func AutoEnv(cfg *MongoConfig) {
 	cfgVal := reflect.ValueOf(cfg)
-	cfgType := cfgVal.Elem()
-
-	for i := 0; i < cfgVal.Type().NumField(); i++ {
-		t := cfgType.Type().Field(i).Tag.Get("env")
-		if !isEmpty(os.Getenv(t)) {
-			if cfgType.Field(i).CanSet() {
-				cfgType.Field(i).SetString(os.Getenv(t))
+	cfgEl := cfgVal.Elem()
+	for i := 0; i < cfgEl.Type().NumField(); i++ {
+		t := cfgEl.Type().Field(i).Tag.Get("env")
+		if os.Getenv(t) != "" {
+			log.Printf("get env from %s", t)
+			if cfgEl.Field(i).CanSet() {
+				cfgEl.Field(i).SetString(t)
 			}
 		}
 	}
-}
-
-func isEmpty(val string) bool {
-	return val == ""
 }
