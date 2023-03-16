@@ -18,14 +18,6 @@ func NewRepository(db *mongo.Database) Repository {
 	return Repository{Colletion: &cimp}
 }
 
-// OPTIONAL TODO
-// projection filter field you want to return
-//
-//	opt.SetProjection(bson.D{
-//		{Key: "field1", Value: 0,},
-//		{Key: "field2", Value: 1},
-//	})
-
 func (r *Repository) CatalogFirstLine(ctx context.Context, contentLimit int64) ([]CatalogDisplay, error) {
 	opt := options.Find().SetLimit(contentLimit)
 	return r.catalogFinder(ctx, bson.D{}, opt)
