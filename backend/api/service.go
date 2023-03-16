@@ -16,8 +16,8 @@ var (
 )
 
 type Service interface {
-	CatalogList(context.Context, int) ([]repository.DocCatalog, error)
-	CatalogListByCategory(context.Context, int, string) ([]repository.DocCatalog, error)
+	CatalogList(context.Context, int) ([]repository.CatalogDisplay, error)
+	CatalogListByCategory(context.Context, int, string) ([]repository.CatalogDisplay, error)
 	Product(context.Context, primitive.ObjectID) (repository.Product, error)
 }
 
@@ -28,7 +28,7 @@ type ServiceCirclePage struct {
 // pagination with index in cache
 // return helper.MaxPerPage array leng or less
 // id reference per page from cache.Pagination
-func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]repository.DocCatalog, error) {
+func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]repository.CatalogDisplay, error) {
 	id := cache.Pagination.Page(page)
 	if id == primitive.NilObjectID {
 		return nil, fmt.Errorf("page not found")
@@ -52,7 +52,7 @@ func (s *ServiceCirclePage) CatalogList(ctx context.Context, page int) ([]reposi
 
 // TODO
 // make it works
-func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int, category string) ([]repository.DocCatalog, error) {
+func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int, category string) ([]repository.CatalogDisplay, error) {
 	id := cache.Pagination.CategoryPage(category, page)
 	if id == primitive.NilObjectID {
 		return s.repo.CatalogFirstPageWithCategory(ctx, int64(helper.MaxProductPerPage), category)
@@ -83,7 +83,7 @@ func (s *ServiceCirclePage) Product(ctx context.Context, id primitive.ObjectID) 
 // @id item starts from, @contentLimit limit catalog you want to fetch
 // if the pagination is at the bottom of the item, while there are still items that have not been returned
 // then a batch 2 query will be executed to the top item in the database database
-func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int, category ...string) (ctlgLs []repository.DocCatalog, err error) {
+func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.ObjectID, page int, contentLimit int, category ...string) (ctlgLs []repository.CatalogDisplay, err error) {
 	if len(category) > 0 {
 		ctlgLs, err = s.repo.CatalogGteIdByCategory(ctx, id, int64(contentLimit), category[0])
 	} else {

@@ -35,10 +35,10 @@ func DocumentFromModel(model interface{}) bson.D {
 	return doc
 }
 
-func DecodeCatalogCursor(ctx context.Context, curr *mongo.Cursor) ([]DocCatalog, error) {
-	var result []DocCatalog
+func DecodeCatalogCursor(ctx context.Context, curr *mongo.Cursor) ([]CatalogDisplay, error) {
+	var result []CatalogDisplay
 	for curr.Next(ctx) {
-		var tmp DocCatalog
+		var tmp CatalogDisplay
 		if err := curr.Decode(&tmp); err != nil {
 			return result, err
 		}

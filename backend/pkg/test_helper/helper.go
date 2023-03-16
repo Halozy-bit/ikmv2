@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http/httptest"
@@ -31,14 +32,30 @@ func SeedCatalog(total int, repo repository.Repository) CatalogDummy {
 	cTotal := int32(len(helper.CategoryAvail))
 	for i := 0; i < total; i++ {
 		Category := repository.RandInt(0, cTotal)
-		param := repository.DocCatalog{
+		param := repository.Product{
 			Name:        repository.RandName(),
 			Category:    cd.Category[Category],
 			Description: repository.RandString(15),
 			Owner:       primitive.NewObjectID().Hex(),
-			Foto:        primitive.NewObjectID().Hex() + ".jpg",
+			Foto: repository.Foto{
+				Cover:   primitive.NewObjectID().Hex() + ".jpg",
+				Detail1: primitive.NewObjectID().Hex() + ".jpg",
+				Detail2: primitive.NewObjectID().Hex() + ".jpg",
+			},
+			Weight: []string{
+				fmt.Sprintf("%d gr", repository.RandInt(100, 500)),
+				fmt.Sprintf("%d gr", repository.RandInt(100, 500)),
+			},
+			Variant: []string{
+				repository.RandName(true),
+				repository.RandName(true),
+			},
+			Composition: []string{
+				repository.RandName(true),
+				repository.RandName(true),
+			},
 		}
-		insrd, err := repo.Insert(context.TODO(), param)
+		insrd, err := repo.InsertCatalog(context.TODO(), repository.ProductToDocument(param))
 		if err != nil {
 			panic(err)
 		}
@@ -88,7 +105,7 @@ func EncodeID(last_id string) (io.Reader, error) {
 }
 
 // return -1 if error
-func VerifyOutput(t *testing.T, page int, maxPage int, ctlg []repository.DocCatalog, DummyData []primitive.ObjectID) {
+func VerifyOutput(t *testing.T, page int, maxPage int, ctlg []repository.CatalogDisplay, DummyData []primitive.ObjectID) {
 	if len(ctlg) > helper.MaxProductPerPage {
 		t.Fatal()
 		return
@@ -112,7 +129,7 @@ type OutputNextID struct {
 	ExpectedFirst int
 	ExpectedLast  int
 	InitData      int
-	Ctlg          []repository.DocCatalog
+	Ctlg          []repository.CatalogDisplay
 	DummyData     []primitive.ObjectID
 }
 

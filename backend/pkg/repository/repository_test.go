@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -14,7 +15,7 @@ import (
 )
 
 var repo Repository
-var inserted []DocCatalog
+var inserted []Product
 var conn *mongo.Database
 var category [3]string
 var sumPerCategory [3]int
@@ -51,21 +52,37 @@ func TestConnection(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	insertParam := make([]DocCatalog, 10)
+	insertParam := make([]Product, 10)
 	for i := range insertParam {
 		Category := RandInt(0, 3)
 		sumPerCategory[Category]++
-		insertParam[i] = DocCatalog{
+		insertParam[i] = Product{
 			Name:        RandName(),
 			Category:    category[Category],
 			Description: RandString(15),
 			Owner:       primitive.NewObjectID().Hex(),
-			Foto:        primitive.NewObjectID().Hex() + ".jpg",
+			Foto: Foto{
+				Cover:   primitive.NewObjectID().Hex() + ".jpg",
+				Detail1: primitive.NewObjectID().Hex() + ".jpg",
+				Detail2: primitive.NewObjectID().Hex() + ".jpg",
+			},
+			Weight: []string{
+				fmt.Sprintf("%d gr", RandInt(100, 500)),
+				fmt.Sprintf("%d gr", RandInt(100, 500)),
+			},
+			Variant: []string{
+				RandName(true),
+				RandName(true),
+			},
+			Composition: []string{
+				RandName(true),
+				RandName(true),
+			},
 		}
 	}
 
-	for i := range insertParam {
-		id, err := repo.Insert(context.TODO(), insertParam[i])
+	for i, val := range insertParam {
+		id, err := repo.InsertCatalog(context.TODO(), ProductToDocument(val))
 		assert.NoError(t, err)
 		if err != nil {
 			continue

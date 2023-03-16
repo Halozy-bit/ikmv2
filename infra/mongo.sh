@@ -14,3 +14,6 @@ then
 fi
 
 podman start $AppName
+
+# MONGOSH
+# mongosh "mongodb://user:secret@127.0.0.1:27017/ikm-project-beta_test?authSource=admin"

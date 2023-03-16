@@ -13,3 +13,7 @@ type collectionImp struct {
 func (c *collectionImp) Catalog() *mongo.Collection {
 	return c.db.Collection("catalog")
 }
+
+func (c *collectionImp) Owner() *mongo.Collection {
+	return c.db.Collection("owner")
+}

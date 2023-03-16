@@ -26,18 +26,23 @@ func NewRepository(db *mongo.Database) Repository {
 //		{Key: "field2", Value: 1},
 //	})
 
-func (r *Repository) CatalogFirstLine(ctx context.Context, contentLimit int64) ([]DocCatalog, error) {
+func (r *Repository) CatalogFirstLine(ctx context.Context, contentLimit int64) ([]CatalogDisplay, error) {
 	opt := options.Find().SetLimit(contentLimit)
 	return r.catalogFinder(ctx, bson.D{}, opt)
 }
 
-func (r *Repository) CatalogFirstPageWithCategory(ctx context.Context, contentLimit int64, category string) ([]DocCatalog, error) {
+func (r *Repository) CatalogFirstPageWithCategory(ctx context.Context, contentLimit int64, category string) ([]CatalogDisplay, error) {
 	opt := options.Find().SetLimit(contentLimit)
 	filter := bson.D{{Key: CategoryField, Value: category}}
 	return r.catalogFinder(ctx, filter, opt)
 }
 
-func (r *Repository) catalogFinder(ctx context.Context, filter bson.D, opt *options.FindOptions) ([]DocCatalog, error) {
+func (r *Repository) catalogFinder(ctx context.Context, filter bson.D, opt *options.FindOptions) ([]CatalogDisplay, error) {
+	opt.SetProjection(bson.D{
+		{Key: "_id", Value: 1}, {Key: "nama", Value: 1}, {Key: "kategori", Value: 1},
+		{Key: "owner", Value: 1}, {Key: "thumbnail", Value: "$foto.cover"},
+	})
+
 	curr, err := r.Catalog().Find(ctx, filter, opt)
 	if err != nil {
 		return nil, err
@@ -47,7 +52,7 @@ func (r *Repository) catalogFinder(ctx context.Context, filter bson.D, opt *opti
 
 // search the catalog with the underlying query selector
 // ex Query Selectors bson.D{{Key: "$gt", Value: id}}
-func (r *Repository) CatalogIdSelector(ctx context.Context, contentLimit int64, id bson.D, addFilter ...bson.E) ([]DocCatalog, error) {
+func (r *Repository) CatalogIdSelector(ctx context.Context, contentLimit int64, id bson.D, addFilter ...bson.E) ([]CatalogDisplay, error) {
 	opt := &options.FindOptions{}
 	opt.SetLimit(contentLimit)
 
@@ -60,7 +65,7 @@ func (r *Repository) CatalogIdSelector(ctx context.Context, contentLimit int64, 
 }
 
 // get catalog from greater than @id
-func (r *Repository) CatalogGtId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]DocCatalog, error) {
+func (r *Repository) CatalogGtId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]CatalogDisplay, error) {
 	gtID := bson.D{{Key: "$gt", Value: id}}
 	if len(category) > 0 {
 		return r.CatalogIdSelector(ctx, contentLimit, gtID, bson.E{Key: CategoryField, Value: category})
@@ -69,24 +74,23 @@ func (r *Repository) CatalogGtId(ctx context.Context, id primitive.ObjectID, con
 }
 
 // get catalog from greater or equal @id
-func (r *Repository) CatalogGteId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]DocCatalog, error) {
+func (r *Repository) CatalogGteId(ctx context.Context, id primitive.ObjectID, contentLimit int64, category ...string) ([]CatalogDisplay, error) {
 	gtID := bson.D{{Key: "$gte", Value: id}}
 	return r.CatalogIdSelector(ctx, contentLimit, gtID)
 }
 
-func (r *Repository) CatalogGteIdByCategory(ctx context.Context, id primitive.ObjectID, contentLimit int64, category string) ([]DocCatalog, error) {
+func (r *Repository) CatalogGteIdByCategory(ctx context.Context, id primitive.ObjectID, contentLimit int64, category string) ([]CatalogDisplay, error) {
 	gtID := bson.D{{Key: "$gte", Value: id}}
 	return r.CatalogIdSelector(ctx, contentLimit, gtID, bson.E{Key: CategoryField, Value: category})
 }
 
-func (r *Repository) Insert(ctx context.Context, in DocCatalog) (interface{}, error) {
-	doc := DocumentFromModel(in)
+func (r *Repository) InsertCatalog(ctx context.Context, doc bson.D) (interface{}, error) {
 	res, err := r.Catalog().InsertOne(ctx, doc)
 	return res.InsertedID, err
 }
 
-func (r *Repository) FirstItem() (DocCatalog, error) {
-	var doc DocCatalog
+func (r *Repository) FirstItem() (CatalogDisplay, error) {
+	var doc CatalogDisplay
 	findOptions := options.FindOne()
 	// Sort by id field ascending
 	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
@@ -95,12 +99,12 @@ func (r *Repository) FirstItem() (DocCatalog, error) {
 	return doc, err
 }
 
-func (r *Repository) LastItem() (DocCatalog, error) {
+func (r *Repository) LastItem() (CatalogDisplay, error) {
 	findOptions := options.FindOne()
 	// Sort by id field descending
 	findOptions.SetSort(bson.D{{Key: "_id", Value: -1}})
 
-	var doc DocCatalog
+	var doc CatalogDisplay
 	err := r.Catalog().FindOne(context.TODO(), bson.D{}, findOptions).Decode(&doc)
 
 	return doc, err
@@ -113,14 +117,9 @@ func (r *Repository) CountCatalog(ctx context.Context) (int64, error) {
 
 func (r *Repository) FindProduct(ctx context.Context, id primitive.ObjectID) (Product, error) {
 	filter := bson.D{{Key: "_id", Value: id}}
-	opt := options.FindOne()
-	opt.SetProjection(bson.D{
-		{Key: "_id", Value: 1}, {Key: "nama", Value: 1}, {Key: "kategori", Value: 1},
-		{Key: "deskripsi", Value: 1}, {Key: "owner", Value: 1}, {Key: "foto", Value: 1},
-	})
 
 	var p Product
-	err := r.Catalog().FindOne(ctx, filter, opt).Decode(&p)
+	err := r.Catalog().FindOne(ctx, filter).Decode(&p)
 	return p, err
 }
 
