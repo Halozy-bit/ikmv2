@@ -26,21 +26,32 @@
                 </div>
                 <div class="d-lg-flex justify-content-lg-between flex-wrap justify-content-sm-center">
                 <?php
-                    $str = file_get_contents('http://192.168.1.67:8081/catalog/1');
+                    $str = file_get_contents('http://192.168.1.67:8082/catalog/1');
                     $json = json_decode($str, true);
                     // var_dump($json);
                     foreach ($json['catalog'] as $key => $value) {
                         echo "
                         <div class='d-flex flex-column col-lg-3 ps-3'>
                             <div class='pt-3 pe-3'><img src='https://lh4.googleusercontent.com/21JKU08_lRAcreQiSuJx1kI1g1I6_Fnsq0X7FrZLxhxplWaK1VYOVqcLVD7yUnVfGuw=w2400' class='img-fluid' style='border-radius: 5%;' height='180'></div>
-                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'>Makanan Kering</div>
-                            <div class='fw-bold fs-4'>{$value['Name']}</div>
-                            <div><a href='index.php' style='text-decoration: none; color:black;'>{$value['Owner']}</a></span></button></div>
+                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'>{$value['kategori']}</div>
+                            <div class='fw-bold fs-4'>{$value['nama']}</div>
+                            <div><a href='index.php' style='text-decoration: none; color:black;'>{$value['owner']}</a></span></button></div>
                         </div>
                         ";
                         // print_r($value);
                     }
                 ?>
+                </div>
+                <div class="container d-flex justify-content-center pt-3">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        <li class="page-item"><a class="text-dark page-link" href="#">Previous</a></li>
+                        <li class="page-item"><a class="text-dark page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="text-dark page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="text-dark page-link" href="#">3</a></li>
+                        <li class="page-item"><a class="text-dark page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
                 </div>
             </div>
         </div>
