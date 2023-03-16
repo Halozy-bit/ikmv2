@@ -21,11 +21,6 @@ type RefreshCatalogCategoryPage struct {
 	Db *mongo.Database
 }
 
-// TODO
-// get all category
-// set category to slice
-// loop all category
-// nest loop in category per page then save to cache
 func (rcp RefreshCatalogCategoryPage) Run() {
 	coll := rcp.Db.Collection("catalog")
 
