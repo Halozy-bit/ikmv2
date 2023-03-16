@@ -19,6 +19,7 @@ type Service interface {
 	CatalogList(context.Context, int) ([]repository.CatalogDisplay, error)
 	CatalogListByCategory(context.Context, int, string) ([]repository.CatalogDisplay, error)
 	Product(context.Context, primitive.ObjectID) (repository.Product, error)
+	TotalPage(...string) int
 }
 
 type ServiceCirclePage struct {
@@ -109,4 +110,11 @@ func (s *ServiceCirclePage) fetchCatalog(ctx context.Context, id primitive.Objec
 
 	ctlgLs = append(ctlgLs, ctlgLsFirst...)
 	return
+}
+
+func (s *ServiceCirclePage) TotalPage(category ...string) int {
+	if len(category) > 0 {
+		return cache.Pagination.LengCategory(category[0])
+	}
+	return cache.Pagination.Leng()
 }
