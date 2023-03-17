@@ -97,9 +97,8 @@ func (a Api) GetCatalog(c echo.Context) error {
 	case mongo.ErrNoDocuments:
 		err = c.JSON(http.StatusNoContent, JsonMap{"message": "no content"})
 	default:
-		err = c.JSON(http.StatusInternalServerError, JsonMap{"message": err.Error()})
+		err = c.JSON(http.StatusInternalServerError, JsonMap{"message": cErr.Error()})
 	}
-
 	return err
 }
 
