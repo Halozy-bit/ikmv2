@@ -76,8 +76,17 @@ func (r *Repository) CatalogGteIdByCategory(ctx context.Context, id primitive.Ob
 	return r.CatalogIdSelector(ctx, contentLimit, gtID, bson.E{Key: CategoryField, Value: category})
 }
 
-func (r *Repository) InsertCatalog(ctx context.Context, doc bson.D) (interface{}, error) {
+// Todo
+// change @doc to Product, and possible to use ProductToDocument()
+func (r *Repository) InsertCatalog(ctx context.Context, p Product) (interface{}, error) {
+	doc := ProductToDocument(p)
 	res, err := r.Catalog().InsertOne(ctx, doc)
+	return res.InsertedID, err
+}
+
+func (r *Repository) InsertOwner(ctx context.Context, u Umkm) (interface{}, error) {
+	umkm := UmkmToDocument(u)
+	res, err := r.Owner().InsertOne(ctx, umkm)
 	return res.InsertedID, err
 }
 
@@ -113,6 +122,14 @@ func (r *Repository) FindProduct(ctx context.Context, id primitive.ObjectID) (Pr
 	var p Product
 	err := r.Catalog().FindOne(ctx, filter).Decode(&p)
 	return p, err
+}
+
+func (r *Repository) FindUmkm(ctx context.Context, id primitive.ObjectID) (Umkm, error) {
+	filter := bson.D{{Key: "_id", Value: id}}
+
+	var u Umkm
+	err := r.Owner().FindOne(ctx, filter).Decode(&u)
+	return u, err
 }
 
 func (r *Repository) CountCatalogCategory(ctx context.Context, category string) (int64, error) {

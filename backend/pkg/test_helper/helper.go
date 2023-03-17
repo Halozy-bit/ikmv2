@@ -58,7 +58,7 @@ func SeedCatalog(totalProduct, totalOwner int, repo repository.Repository) Catal
 				repository.RandName(true),
 			},
 		}
-		insrd, err := repo.InsertCatalog(context.TODO(), repository.ProductToDocument(param))
+		insrd, err := repo.InsertCatalog(context.TODO(), param)
 		if err != nil {
 			panic(err)
 		}

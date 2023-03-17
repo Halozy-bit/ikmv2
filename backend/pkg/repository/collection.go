@@ -4,6 +4,7 @@ import "go.mongodb.org/mongo-driver/mongo"
 
 type Colletion interface {
 	Catalog() *mongo.Collection
+	Owner() *mongo.Collection
 }
 
 type collectionImp struct {
