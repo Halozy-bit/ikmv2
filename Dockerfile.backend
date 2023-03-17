@@ -1,0 +1,19 @@
+FROM docker.io/golang:1.20.1-alpine3.16 AS stage1
+
+WORKDIR /build/ikmv2
+COPY main.go .
+COPY go.mod .
+COPY go.sum .
+RUN mkdir backend
+COPY backend ./backend
+
+RUN go build -o ikm-backend .
+
+FROM docker.io/alpine:3.16
+
+WORKDIR /backend
+COPY --from=stage1 /build/ikmv2/ikm-backend .
+
+EXPOSE 8080
+
+cmd ["./ikm-backend"]
