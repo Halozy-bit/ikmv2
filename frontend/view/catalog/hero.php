@@ -10,7 +10,7 @@
     <div id="catalog">
         <div class="container">
             <div class="container">
-                <div class="d-lg-flex flex-column justify-content-center">
+                <!-- <div class="d-lg-flex flex-column justify-content-center">
                     <form class="d-flex" role="search">
                         <input class="form-control me-2" type="search" width="240" placeholder="Search" aria-label="Search">
                     </form>
@@ -23,7 +23,7 @@
                         <button type="button" class="btn">Minuman</button>
                         <button type="button" class="btn">Aksesoris</button>
                     </div>
-                </div>
+                </div> -->
                 <div class="d-lg-flex justify-content-lg-between flex-wrap justify-content-sm-center">
                 <?php
         
@@ -35,13 +35,12 @@
                     if ($page < 1) $page = 1;
                     $str = file_get_contents('http://192.168.1.67:8082/catalog/'.$page);
                     $json = json_decode($str, true);
-                    var_dump($json);
                     foreach ($json['catalog'] as $key => $value) {
                         echo "
                         <div class='d-flex flex-column col-lg-3 ps-3'>
-                            <div class='pt-3 pe-3'><a href=''><img src='{$value['thumbnail']}' class='img-fluid' alt='Goole Drive Image' style='border-radius: 5%;' height='180'></a></div>
-                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'><a href='' style='text-decoration:none;'>{$value['kategori']}</a></div>
-                            <div class=''><a class='fw-bold fs-4 text-decoration-none' href='product.php?id={$value['id']}'>{$value['nama']}</a></div>
+                            <div class='pt-3 pe-3'><a href='product.php?id={$value['id']}'><img src='{$value['thumbnail']}' class='img-fluid' alt='Goole Drive Image' style='border-radius: 5%;' height='180'></a></div>
+                            <div style='background-color:#FEFBE8;' class='col-7 mt-2 badge rounded-pill text-dark'><a href='' style='text-decoration:none; color:black;'>{$value['kategori']}</a></div>
+                            <div class=''><a class='fw-bold fs-4 text-decoration-none text-dark' href='product.php?id={$value['id']}'>{$value['nama']}</a></div>
                             <div><a href='perprofile.php?id={$value['owner']}' style='text-decoration: none; color:black;'>{$value['owner']}</a></span></button></div>
                         </div>
                         ";
@@ -57,12 +56,14 @@
                             $maxPage = $json['total'];
                             $next = $maxPage - $page;
                             $href = "http://localhost/ikmv2/frontend/view/catalog.php?page=";
+                            
                             if ($page == 1) {
                                 echo "
-                                <li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page-1) . "'>$page</a></li>
-                                <li class='page-item'><a class='text-dark page-link' href='{$href}" . $page . "'>" . ($page+1) . "</a></li>
-                                <li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page+1) . "'>Next</a></li>
-                            ";
+                                <li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page) . "'>$page</a></li>";
+                                if ($next > 0) {
+                                    echo "<li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page+1) . "'>Next</a></li>
+                                    <li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page+1) . "'>Next</a></li>";
+                                }
                             } elseif($next > 1) {
                                 echo "
                                 <li class='page-item'><a class='text-dark page-link' href='{$href}" . ($page-1) . "'>Previous</a></li>
