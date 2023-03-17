@@ -25,9 +25,9 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db)
-	// testhelper.SeedCatalog(40, 6, repo)
+
 	node := api.NewEndpoint(repo)
 	node.StartSideJob(db)
 	node.ExposeRoute()
-	node.StartServer(":8082")
+	node.StartServer(":8080")
 }
