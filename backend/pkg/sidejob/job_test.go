@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("database connected")
 
-	ctldDummy = testhelper.SeedCatalog(40, repository.NewRepository(db))
+	ctldDummy = testhelper.SeedCatalog(40, 6, repository.NewRepository(db))
 	log.Println("Running tests!")
 
 	exitVal := m.Run()

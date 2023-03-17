@@ -66,6 +66,9 @@ func (a Api) ExposeRoute() {
 	a.server.GET("/catalog/:page", a.GetCatalog)
 	a.server.GET("/catalog/:category/:page", a.GetCatalogByCategory)
 	a.server.GET("/product/:id", a.GetProduct)
+	a.server.GET("/page/count", a.TotalPage)
+	a.server.GET("/page/count/:category", a.TotalPage)
+	a.server.GET("/umkm/:id", a.GetUmkm)
 }
 
 func (a Api) Pong(c echo.Context) error {
@@ -147,6 +150,31 @@ func (a Api) GetProduct(c echo.Context) error {
 	}
 
 	return err
+}
+
+func (a Api) TotalPage(c echo.Context) error {
+	req := c.Param("category")
+	var ttl int
+	if req == "" {
+		ttl = a.service.TotalPage()
+	} else {
+		ttl = a.service.TotalPage(req)
+	}
+	return c.JSON(200, JsonMap{"total": ttl})
+}
+
+func (a Api) GetUmkm(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, JsonMap{"message": "page not exist"})
+	}
+	u, err := a.service.Umkm(c.Request().Context(), id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, JsonMap{"message": "umkm not found"})
+	}
+
+	return c.JSON(200, JsonMap{"umkm": u})
 }
 
 func (a Api) Server() *echo.Echo {

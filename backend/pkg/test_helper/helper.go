@@ -20,23 +20,26 @@ import (
 type CatalogDummy struct {
 	Category     []string
 	CounCategory []int
+	Owner        []primitive.ObjectID
 	Dummy        []primitive.ObjectID
 }
 
-func SeedCatalog(total int, repo repository.Repository) CatalogDummy {
+func SeedCatalog(totalProduct, totalOwner int, repo repository.Repository) CatalogDummy {
 	cd := CatalogDummy{
 		Category:     helper.CategoryAvail,
 		CounCategory: make([]int, len(helper.CategoryAvail)),
+		Owner:        seedOwner(totalOwner, repo),
 	}
 
 	cTotal := int32(len(helper.CategoryAvail))
-	for i := 0; i < total; i++ {
+	for i := 0; i < totalProduct; i++ {
 		Category := repository.RandInt(0, cTotal)
 		param := repository.Product{
 			Name:        repository.RandName(),
 			Category:    cd.Category[Category],
 			Description: repository.RandString(15),
-			Owner:       primitive.NewObjectID().Hex(),
+			Owner:       cd.Owner[repository.RandInt(0, int32(totalOwner-1))].Hex(),
+			Pirt:        primitive.NewObjectID().Hex(),
 			Foto: repository.Foto{
 				Cover:   primitive.NewObjectID().Hex() + ".jpg",
 				Detail1: primitive.NewObjectID().Hex() + ".jpg",
@@ -55,7 +58,7 @@ func SeedCatalog(total int, repo repository.Repository) CatalogDummy {
 				repository.RandName(true),
 			},
 		}
-		insrd, err := repo.InsertCatalog(context.TODO(), repository.ProductToDocument(param))
+		insrd, err := repo.InsertCatalog(context.TODO(), param)
 		if err != nil {
 			panic(err)
 		}
@@ -67,6 +70,47 @@ func SeedCatalog(total int, repo repository.Repository) CatalogDummy {
 	}
 
 	return cd
+}
+
+func seedOwner(total int, repo repository.Repository) []primitive.ObjectID {
+	us := make([]primitive.ObjectID, total)
+	for i := 0; i < total; i++ {
+		param := repository.Umkm{
+			Name:        repository.RandName(),
+			Description: repository.RandString(30),
+			BadanHukum:  "UD. " + repository.RandName(),
+			Branding:    repository.RandName(true),
+			Marketplace: repository.Marketplace{
+				Shopee:     repository.RandName(true),
+				Tokopedia:  repository.RandName(true),
+				TiktokShop: repository.RandName(true),
+			},
+			SocialMedia: repository.SocialMedia{
+				Instagram: repository.RandName(true),
+				Tiktok:    repository.RandName(true),
+				Facebook:  repository.RandName(true),
+				Youtube:   repository.RandName(true),
+			},
+			Foto: repository.FotoOwner{
+				FotoRompi:     primitive.NewObjectID().Hex() + ".jpg",
+				FotoWawancara: primitive.NewObjectID().Hex() + ".jpg",
+				FotoProduksi:  primitive.NewObjectID().Hex() + ".jpg",
+			},
+			Story: []string{
+				repository.RandString(10),
+				repository.RandString(10),
+			},
+		}
+
+		insId, err := repo.InsertOwner(context.TODO(), param)
+		if err != nil {
+			panic(err)
+		}
+
+		id := insId.(primitive.ObjectID)
+		us[i] = id
+	}
+	return us
 }
 
 type TestSetParam struct {

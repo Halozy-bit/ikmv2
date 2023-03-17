@@ -35,6 +35,13 @@ func (p *pagination) Leng() int {
 	return leng
 }
 
+func (p *pagination) LengCategory(category string) int {
+	p.mux.RLock()
+	defer p.mux.RUnlock()
+	leng := len(p.category[category])
+	return leng
+}
+
 // starts from page 1
 func (p *pagination) Page(idx int) primitive.ObjectID {
 	p.mux.RLock()

@@ -82,7 +82,7 @@ func TestInsert(t *testing.T) {
 	}
 
 	for i, val := range insertParam {
-		id, err := repo.InsertCatalog(context.TODO(), ProductToDocument(val))
+		id, err := repo.InsertCatalog(context.TODO(), val)
 		assert.NoError(t, err)
 		if err != nil {
 			continue
