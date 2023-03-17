@@ -26,18 +26,21 @@
                 </div>
                 <div class="d-lg-flex justify-content-lg-between flex-wrap justify-content-sm-center">
                 <?php
-                    $page = (int)$_REQUEST['page'];
-                    if (!isset($_REQUEST['page'])) {
+        
+                    if (isset($_REQUEST['page'])) {
+                        $page = (int)$_REQUEST['page'];
+                    } else {
                         $page = 1;
                     }
                     if ($page < 1) $page = 1;
                     $str = file_get_contents('http://192.168.1.67:8082/catalog/'.$page);
                     $json = json_decode($str, true);
+                    var_dump($json);
                     foreach ($json['catalog'] as $key => $value) {
                         echo "
                         <div class='d-flex flex-column col-lg-3 ps-3'>
-                            <div class='pt-3 pe-3'><a href=''><img src='{$value['thumbnail']}' class='img-fluid' style='border-radius: 5%;' height='180'></a></div>
-                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'>{$value['kategori']}</div>
+                            <div class='pt-3 pe-3'><a href=''><img src='{$value['thumbnail']}' class='img-fluid' alt='Goole Drive Image' style='border-radius: 5%;' height='180'></a></div>
+                            <div style='background-color:#FEFBE8' class='col-7 mt-2 badge rounded-pill text-dark'><a href='' style='text-decoration:none;'>{$value['kategori']}</a></div>
                             <div class=''><a class='fw-bold fs-4 text-decoration-none' href='product.php?id={$value['id']}'>{$value['nama']}</a></div>
                             <div><a href='perprofile.php?id={$value['owner']}' style='text-decoration: none; color:black;'>{$value['owner']}</a></span></button></div>
                         </div>
