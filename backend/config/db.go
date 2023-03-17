@@ -22,7 +22,7 @@ func AutoEnv(cfg *MongoConfig) {
 		if os.Getenv(t) != "" {
 			log.Printf("get env from %s", t)
 			if cfgEl.Field(i).CanSet() {
-				cfgEl.Field(i).SetString(t)
+				cfgEl.Field(i).SetString(os.Getenv(t))
 			}
 		}
 	}
