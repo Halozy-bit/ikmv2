@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ikmv2/backend/pkg/cache"
 	"github.com/ikmv2/backend/pkg/helper"
@@ -18,7 +19,8 @@ var (
 type Service interface {
 	CatalogList(context.Context, int) ([]repository.CatalogDisplay, error)
 	CatalogListByCategory(context.Context, int, string) ([]repository.CatalogDisplay, error)
-	Product(context.Context, primitive.ObjectID) (repository.Product, error)
+	Product(context.Context, primitive.ObjectID) (Product, error)
+	Umkm(context.Context, primitive.ObjectID) (repository.Umkm, error)
 	TotalPage(...string) int
 }
 
@@ -75,8 +77,42 @@ func (s *ServiceCirclePage) CatalogListByCategory(ctx context.Context, page int,
 	return s.fetchCatalog(ctx, id, page, TotalProductNextPage, category)
 }
 
-func (s *ServiceCirclePage) Product(ctx context.Context, id primitive.ObjectID) (repository.Product, error) {
-	return s.repo.FindProduct(ctx, id)
+type Product struct {
+	Id          primitive.ObjectID `bson:"_id" json:"id"`
+	Name        string             `bson:"nama" json:"nama"`
+	Category    string             `bson:"kategori" json:"kategori"`
+	Weight      string             `bson:"ukuran" json:"ukuran"`
+	Pirt        string             `bson:"pirt" json:"pirt"`
+	Variant     string             `bson:"varian" json:"varian"`
+	Composition string             `bson:"komposisi" json:"komposisi"`
+	Description string             `bson:"deskripsi" json:"deskripsi"`
+	Owner       string             `bson:"owner" json:"owner"`
+	Foto        repository.Foto    `bson:"foto" json:"foto"`
+}
+
+func (s *ServiceCirclePage) Product(ctx context.Context, id primitive.ObjectID) (Product, error) {
+	p, err := s.repo.FindProduct(ctx, id)
+	if err != nil {
+		return Product{}, err
+	}
+
+	prod := Product{
+		Id:          p.Id,
+		Name:        p.Name,
+		Category:    p.Category,
+		Weight:      strings.Join(p.Weight, ", "),
+		Variant:     strings.Join(p.Variant, ", "),
+		Pirt:        p.Pirt,
+		Composition: strings.Join(p.Composition, ", "),
+		Description: p.Description,
+		Owner:       p.Owner,
+		Foto:        p.Foto,
+	}
+	return prod, nil
+}
+
+func (s *ServiceCirclePage) Umkm(ctx context.Context, id primitive.ObjectID) (repository.Umkm, error) {
+	return s.repo.FindUmkm(ctx, id)
 }
 
 // fetch catalog like fetching circle catalog
