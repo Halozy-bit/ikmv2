@@ -4,10 +4,8 @@ import (
 	"log"
 
 	"github.com/ikmv2/backend/api"
-
-	"github.com/ikmv2/backend/pkg/repository"
-
 	"github.com/ikmv2/backend/config"
+	"github.com/ikmv2/backend/pkg/repository"
 )
 
 func main() {
@@ -16,7 +14,7 @@ func main() {
 		User:     "user",
 		Password: "secret",
 		Address:  "127.0.0.1",
-		DbName:   "ikm-project-beta_test",
+		DbName:   "ikm-project-test",
 	}
 
 	config.AutoEnv(&cfg)
@@ -27,9 +25,9 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db)
-
+	// testhelper.SeedCatalog(40, 6, repo)
 	node := api.NewEndpoint(repo)
 	node.StartSideJob(db)
 	node.ExposeRoute()
-	node.StartServer(":8081")
+	node.StartServer(":8082")
 }
