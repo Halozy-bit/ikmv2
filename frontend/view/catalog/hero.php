@@ -33,7 +33,8 @@
                         $page = 1;
                     }
                     if ($page < 1) $page = 1;
-                    $str = file_get_contents('http://192.168.1.67:8082/catalog/'.$page);
+                    $addr = "http://localhost:8080";
+                    $str = file_get_contents("{$addr}/catalog/".$page);
                     $json = json_decode($str, true);
                     foreach ($json['catalog'] as $key => $value) {
                         echo "
@@ -45,7 +46,7 @@
                         </div>
                         ";
                     }
-                    $str = file_get_contents('http://192.168.1.67:8082/page/count');
+                    $str = file_get_contents("{$addr}/page/count");
                     $json = json_decode($str, true);
                 ?>
                 </div>
@@ -55,7 +56,7 @@
                         <?php
                             $maxPage = $json['total'];
                             $next = $maxPage - $page;
-                            $href = "http://localhost/ikmv2/frontend/view/catalog.php?page=";
+                            $href = "/catalog.php?page=";
                             
                             if ($page == 1) {
                                 echo "

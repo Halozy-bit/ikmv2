@@ -1,5 +1,6 @@
     <?php
-    $str = file_get_contents('http://192.168.1.67:8082/umkm/'. $_REQUEST['id']);
+    $addr = "http://localhost:8080";
+    $str = file_get_contents("{$addr}/umkm/". $_REQUEST['id']);
     $json = json_decode($str, true);
     $val = $json['umkm']; 
     ?>
@@ -7,7 +8,7 @@
     <div id="hero" class="container">
         <div class="container text-center pt-2">
             <p class="fw-bold" >Detail UMKM</p>
-            <h1><?php echo $val['nama'] ?></h1>
+            <h1><?php echo $val['branding'] ?></h1>
             <p><?php echo $val['cerita'][0] ?></p>
         </div>
     </div>

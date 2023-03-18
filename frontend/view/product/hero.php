@@ -1,5 +1,6 @@
     <?php
-    $str = file_get_contents('http://192.168.1.67:8082/product/'. $_REQUEST['id']);
+    $addr = "http://localhost:8080";
+    $str = file_get_contents("{$addr}/product/". $_REQUEST['id']);
     $json = json_decode($str, true);
     $val = $json['product']; 
     ?>
