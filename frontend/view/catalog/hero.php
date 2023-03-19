@@ -42,7 +42,7 @@
                             <div class='pt-3 pe-3'><a href='product.php?id={$value['id']}'><img src='{$value['thumbnail']}' class='img-fluid' alt='Goole Drive Image' style='border-radius: 5%;' height='180'></a></div>
                             <div style='background-color:#FEFBE8;' class='col-7 mt-2 badge rounded-pill text-dark'><a href='' style='text-decoration:none; color:black;'>{$value['kategori']}</a></div>
                             <div class=''><a class='fw-bold fs-4 text-decoration-none text-dark' href='product.php?id={$value['id']}'>{$value['nama']}</a></div>
-                            <div><a href='perprofile.php?id={$value['owner']}' style='text-decoration: none; color:black;'>{$value['owner']}</a></span></button></div>
+                            <div><a href='perprofile.php?id={$value['owner_id']}' style='text-decoration: none; color:black;'>{$value['owner_name']}</a></span></button></div>
                         </div>
                         ";
                     }
