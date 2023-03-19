@@ -32,7 +32,7 @@ func (r *Repository) CatalogFirstPageWithCategory(ctx context.Context, contentLi
 func (r *Repository) catalogFinder(ctx context.Context, filter bson.D, opt *options.FindOptions) ([]CatalogDisplay, error) {
 	opt.SetProjection(bson.D{
 		{Key: "_id", Value: 1}, {Key: "nama", Value: 1}, {Key: "kategori", Value: 1},
-		{Key: "owner", Value: 1}, {Key: "thumbnail", Value: "$foto.cover"},
+		{Key: "owner", Value: 1}, {Key: "nama_owner", Value: 1}, {Key: "thumbnail", Value: "$foto.cover"},
 	})
 
 	curr, err := r.Catalog().Find(ctx, filter, opt)

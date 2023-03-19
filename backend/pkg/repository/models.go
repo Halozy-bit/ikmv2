@@ -17,8 +17,9 @@ type CatalogDisplay struct {
 	Id        primitive.ObjectID `bson:"_id" json:"id"`
 	Name      string             `bson:"nama" json:"nama"`
 	Category  string             `bson:"kategori" json:"kategori"`
-	Owner     string             `bson:"owner" json:"owner"`
+	Owner     string             `bson:"owner" json:"owner_id"`
 	Thumbnail string             `bson:"thumbnail" json:"thumbnail"`
+	OwnerName string             `bson:"nama_owner" json:"owner_name"`
 }
 
 type Product struct {
