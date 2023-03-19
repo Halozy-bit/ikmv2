@@ -16,7 +16,7 @@
         <div class="container">
             <div class="d-lg-flex flex-row  justify-content-around">
                 <div class="d-flex col-lg-6 justify-content-center">
-                    <img class="img-fluid" style="height:320px;" src="<?php echo $val['foto']['detail1'] ?>" alt="">
+                    <img class="img-fluid" style="border-radius:5%;" src="<?php echo $val['foto']['detail1'] ?>" alt="">
                 </div>
                 <div class="my-3 col-lg-6 d-flex flex-column justify-content-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tag-fill" viewBox="0 0 16 16">
@@ -31,7 +31,7 @@
             </div>
             <div class="d-lg-flex flex-row-reverse justify-content-around">
                 <div class="d-flex col-lg-6 justify-content-center">
-                    <img class="img-fluid" style="height:320px;" src="<?php echo $val['foto']['detail2'] ?>" alt="">
+                    <img class="img-fluid" style="border-radius:5%;" src="<?php echo $val['foto']['detail2'] ?>" alt="">
                 </div>
                 <div class="py-3 d-flex col-lg-6 flex-column justify-content-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tag-fill" viewBox="0 0 16 16">
