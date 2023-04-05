@@ -14,47 +14,39 @@ type worker struct {
 	r           *runner
 	isRunning   bool
 	stopChecker chan struct{}
-	stopWorker  chan struct{}
 }
 
 func (w worker) AddTask(newTask Task) error {
 	return w.r.InsertTask(newTask)
 }
 
-func (w *worker) checker(refreshDur time.Duration, r *runner, stopChecker <-chan struct{}) {
-	defer close(w.r.C)
+func (w *worker) checker(refreshDur time.Duration, stopChecker <-chan struct{}) {
 	defer close(w.stopChecker)
-	log.Print("[async checker] running goroutine checker")
+	log.Print("[async pool] running real time task check")
 	ticker := time.NewTicker(refreshDur)
 free:
 	for {
-		r.Check()
+		taskNumber := w.r.Check()
+		if taskNumber > maxTask {
+			continue
+		}
+
+		go w.do(taskNumber)
+
 		select {
 		case <-stopChecker:
-			w.sigStopWorker()
 			break free
 		default:
 			<-ticker.C
 		}
 	}
-	log.Println("[async checker] stopped")
+	log.Println("[async pool] stopped")
 }
 
-func (w *worker) do(r *runner, stopWorker <-chan struct{}) {
-	log.Print("[async worker] running goroutine worker")
-	defer close(w.stopWorker)
-free:
-	for {
-		select {
-		case <-stopWorker:
-			break free
-		case call := <-r.C:
-			log.Print("[task] Running: ", w.r.task[call].GetName())
-			r.Run(call)
-			log.Print("[task] exiting: ", w.r.task[call].GetName())
-		}
-	}
-	log.Println("[async worker] stopped")
+func (w *worker) do(taskNumber int) {
+	log.Print("[task] Running: ", w.r.task[taskNumber].GetName())
+	w.r.Run(taskNumber)
+	log.Print("[task] exiting: ", w.r.task[taskNumber].GetName())
 }
 
 func (w *worker) Start(refreshDur time.Duration) error {
@@ -62,24 +54,15 @@ func (w *worker) Start(refreshDur time.Duration) error {
 		return fmt.Errorf("worker already running")
 	}
 
-	w.r.C = make(chan int)
-	w.stopWorker = make(chan struct{})
 	w.stopChecker = make(chan struct{})
 
-	go w.checker(refreshDur, w.r, w.stopChecker)
-	go w.do(w.r, w.stopWorker)
+	go w.checker(refreshDur, w.stopChecker)
 	return nil
 }
 
 func (w *worker) Stop() {
-	w.sigStopChecker()
+	// signal to stop checker
+	w.stopChecker <- struct{}{}
+	// change state running to false
 	w.isRunning = false
-}
-
-func (w *worker) sigStopChecker() {
-	w.stopChecker <- struct{}{}
-}
-
-func (w *worker) sigStopWorker() {
-	w.stopChecker <- struct{}{}
 }

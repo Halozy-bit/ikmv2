@@ -29,7 +29,7 @@ func TestNewTask(t *testing.T) {
 }
 
 func TestRunner(t *testing.T) {
-	rn := &runner{C: make(chan int)}
+	rn := newRunner()
 	amountTask := 5
 	for i := 0; i < amountTask; i++ {
 		randDur := time.Duration(int(repository.RandInt(1, 5)))
@@ -41,13 +41,12 @@ func TestRunner(t *testing.T) {
 
 	go func(r *runner) {
 		for {
-			run := <-r.Receive()
+			run := r.Check()
 			r.Run(run)
 		}
 	}(rn)
 
 	time.Sleep(time.Second * 6)
-	rn.Check()
 }
 
 func TestAsync(t *testing.T) {

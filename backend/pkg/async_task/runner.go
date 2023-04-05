@@ -6,14 +6,16 @@ import (
 	"time"
 )
 
+// max task
+const maxTask = int(16)
+
 type runner struct {
 	task    []Task
 	nextRun []int64
-	C       chan int
 }
 
 func (r *runner) InsertTask(newTask Task) error {
-	if len(r.task) >= 16 {
+	if len(r.task) >= maxTask {
 		return fmt.Errorf("task full")
 	}
 
@@ -29,10 +31,6 @@ func (r *runner) InsertTask(newTask Task) error {
 	r.nextRun = append(r.nextRun, time.Now().Unix())
 	log.Print("[task] ", newTask.GetName(), " registered")
 	return nil
-}
-
-func (r *runner) Receive() <-chan int {
-	return r.C
 }
 
 func (r *runner) incrementInterval(i int) {
@@ -52,14 +50,15 @@ func (r runner) Run(taskNumber int) error {
 	return nil
 }
 
-func (r *runner) Check() {
+func (r *runner) Check() int {
 	now := time.Now().Unix()
 	for i := 0; i < len(r.nextRun); i++ {
 		next := r.nextRun[i]
 		if next <= now {
-			r.C <- i
+			return i
 		}
 	}
+	return 17
 }
 
 func newRunner() *runner {
